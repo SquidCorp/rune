@@ -1,0 +1,29 @@
+{
+	"name": "rune",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Rune monorepo — runtime, API, CLI, web, and docs",
+	"type": "module",
+	"license": "MIT",
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"scripts": {
+		"dev": "bun run --filter @rune/api dev & bun run --filter @rune/web dev",
+		"dev:api": "bun run --filter @rune/api dev",
+		"dev:web": "bun run --filter @rune/web dev",
+		"dev:docs": "bun run --filter @rune/docs dev",
+		"build": "bun run --filter '@rune/*' build",
+		"start": "bun run --filter @rune/cli start",
+		"rune": "bun run packages/cli/src/bin.ts",
+		"check": "biome check .",
+		"check:fix": "biome check --write .",
+		"format": "biome format --write ."
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.5.4",
+		"@types/bun": "latest",
+		"typescript": "^5"
+	}
+}

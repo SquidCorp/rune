@@ -1,0 +1,21 @@
+{
+	"name": "@rune/engine",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"license": "MIT",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"build": "echo \"@rune/engine: source package (no build)\"",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@earendil-works/pi-coding-agent": "latest"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5"
+	}
+}

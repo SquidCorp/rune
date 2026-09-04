@@ -1,0 +1,457 @@
+/**
+ * Independent Rune / Pi profiles.
+ *
+ * Layout under the runtime data root:
+ *   .rune/profiles/<id>/
+ *     profile.json     optional { name, model, thinkingLevel }
+ *     SYSTEM.md        optional; replaces the system prompt when present
+ *     skills/          unioned with default skills
+ *     prompts/         unioned with default prompts
+ *     themes/          unioned with default themes
+ *     extensions/      per-profile extensions (loaded only for this profile)
+ *     settings.json    kept for the user / other tools (not loaded here)
+ *     models.json      kept for the user / other tools (not loaded here)
+ *     mcp.json         kept for the user / other tools (not loaded here)
+ *
+ * Activation:
+ *   --profile researcher
+ *   /profile researcher     new session, then apply
+ *   /profile                print current profile
+ *   /profile default        new session, back to Default
+ *
+ * No --profile => Default. Last-used is not remembered across process restarts.
+ */
+
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
+import type {
+	ExtensionAPI,
+	ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
+
+import { profilesRoot, profileDir as resolveProfileDir } from "../paths.ts";
+
+const ACTIVE_STORE = Symbol.for("pi.profiles.activeId");
+const STATUS_ID = "profile";
+const RESERVED_DEFAULT = "default";
+
+const THINKING_LEVELS = [
+	"off",
+	"minimal",
+	"low",
+	"medium",
+	"high",
+	"xhigh",
+	"max",
+] as const;
+type ThinkingLevel = (typeof THINKING_LEVELS)[number];
+
+interface ProfileMeta {
+	name?: string;
+	model?: string;
+	thinkingLevel?: ThinkingLevel;
+}
+
+interface ActiveProfile {
+	id: string;
+	dir: string;
+	displayName: string;
+	meta: ProfileMeta;
+	systemPrompt?: string;
+	skillDir?: string;
+	promptDir?: string;
+	themeDir?: string;
+	extensionDir?: string;
+}
+
+type GlobalStore = typeof globalThis & {
+	[ACTIVE_STORE]?: string;
+};
+
+function profileDir(id: string): string {
+	return resolveProfileDir(id);
+}
+
+function getStoredId(): string | undefined {
+	const value = (globalThis as GlobalStore)[ACTIVE_STORE];
+	return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function setStoredId(id: string): void {
+	(globalThis as GlobalStore)[ACTIVE_STORE] = id;
+}
+
+function isSafeProfileId(id: string): boolean {
+	return (
+		id.length > 0 &&
+		id !== RESERVED_DEFAULT &&
+		id !== "." &&
+		id !== ".." &&
+		!id.startsWith(".") &&
+		!id.includes("/") &&
+		!id.includes("\\")
+	);
+}
+
+function isThinkingLevel(value: string): value is ThinkingLevel {
+	return (THINKING_LEVELS as readonly string[]).includes(value);
+}
+
+function listProfileIds(): string[] {
+	const root = profilesRoot();
+	if (!existsSync(root)) return [];
+	try {
+		return readdirSync(root, { withFileTypes: true })
+			.filter((entry) => entry.isDirectory() && isSafeProfileId(entry.name))
+			.map((entry) => entry.name)
+			.sort();
+	} catch {
+		return [];
+	}
+}
+
+function profileExists(id: string): boolean {
+	if (!isSafeProfileId(id)) return false;
+	const dir = profileDir(id);
+	try {
+		return existsSync(dir) && statSync(dir).isDirectory();
+	} catch {
+		return false;
+	}
+}
+
+function readJsonObject(path: string): Record<string, unknown> | undefined {
+	if (!existsSync(path)) return undefined;
+	try {
+		const parsed: unknown = JSON.parse(readFileSync(path, "utf-8"));
+		if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+			return parsed as Record<string, unknown>;
+		}
+	} catch {
+		return undefined;
+	}
+	return undefined;
+}
+
+function loadMeta(dir: string): { meta: ProfileMeta; error?: string } {
+	const path = join(dir, "profile.json");
+	if (!existsSync(path)) return { meta: {} };
+	const raw = readJsonObject(path);
+	if (!raw) return { meta: {}, error: `Invalid JSON: ${path}` };
+
+	const meta: ProfileMeta = {};
+	if (typeof raw.name === "string" && raw.name.trim()) {
+		meta.name = raw.name.trim();
+	}
+	if (typeof raw.model === "string" && raw.model.trim()) {
+		meta.model = raw.model.trim();
+	}
+	if (typeof raw.thinkingLevel === "string") {
+		if (isThinkingLevel(raw.thinkingLevel)) {
+			meta.thinkingLevel = raw.thinkingLevel;
+		} else {
+			return {
+				meta,
+				error: `Invalid thinkingLevel "${raw.thinkingLevel}" in ${path}`,
+			};
+		}
+	}
+	return { meta };
+}
+
+function readSystemPrompt(dir: string): string | undefined {
+	const path = join(dir, "SYSTEM.md");
+	if (!existsSync(path)) return undefined;
+	try {
+		const text = readFileSync(path, "utf-8");
+		return text.trim() ? text : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+function optionalDir(dir: string, name: string): string | undefined {
+	const path = join(dir, name);
+	try {
+		if (existsSync(path) && statSync(path).isDirectory()) return path;
+	} catch {
+		return undefined;
+	}
+	return undefined;
+}
+
+function loadProfile(id: string): { profile?: ActiveProfile; error?: string } {
+	if (id === RESERVED_DEFAULT) return { profile: undefined };
+	if (!isSafeProfileId(id)) return { error: `Invalid profile name "${id}"` };
+	if (!profileExists(id))
+		return { error: `Profile "${id}" not found in ${profilesRoot()}` };
+
+	const dir = profileDir(id);
+	const { meta, error } = loadMeta(dir);
+	return {
+		error,
+		profile: {
+			id,
+			dir,
+			displayName: meta.name ?? id,
+			meta,
+			systemPrompt: readSystemPrompt(dir),
+			skillDir: optionalDir(dir, "skills"),
+			promptDir: optionalDir(dir, "prompts"),
+			themeDir: optionalDir(dir, "themes"),
+			extensionDir: optionalDir(dir, "extensions"),
+		},
+	};
+}
+
+function requestedId(pi: ExtensionAPI): string {
+	const stored = getStoredId();
+	if (stored) return stored;
+	const flag = pi.getFlag("profile");
+	if (typeof flag === "string" && flag.trim()) return flag.trim();
+	return RESERVED_DEFAULT;
+}
+
+function formatCurrent(profile: ActiveProfile | undefined): string {
+	if (!profile) return "Default";
+	return profile.displayName === profile.id
+		? profile.id
+		: `${profile.displayName} (${profile.id})`;
+}
+
+function updateStatus(
+	ctx: ExtensionContext,
+	profile: ActiveProfile | undefined,
+): void {
+	if (!ctx.hasUI) return;
+	if (!profile) {
+		ctx.ui.setStatus(STATUS_ID, undefined);
+		return;
+	}
+	const label = `profile: ${profile.displayName}`;
+	ctx.ui.setStatus(STATUS_ID, ctx.ui.theme.fg("accent", label));
+}
+
+function findModel(ctx: ExtensionContext, spec: string) {
+	const slash = spec.indexOf("/");
+	if (slash <= 0 || slash === spec.length - 1)
+		return { error: `model must be provider/id, got "${spec}"` as const };
+	const provider = spec.slice(0, slash);
+	const modelId = spec.slice(slash + 1);
+	const model = ctx.modelRegistry.find(provider, modelId);
+	if (!model) return { error: `model ${spec} not found` as const };
+	return { model };
+}
+
+async function loadProfileExtensions(pi: ExtensionAPI, extensionDir?: string) {
+	if (!extensionDir || !existsSync(extensionDir)) return;
+
+	try {
+		// Preferred: directory with index.ts
+		const indexPath = join(extensionDir, "index.ts");
+		if (existsSync(indexPath)) {
+			const mod = await import(indexPath);
+			const factory = mod.default;
+			if (typeof factory === "function") {
+				await factory(pi);
+			}
+			return;
+		}
+
+		// Fallback: load all .ts files directly in the folder
+		const entries = readdirSync(extensionDir, { withFileTypes: true })
+			.filter((e) => e.isFile() && e.name.endsWith(".ts"))
+			.map((e) => join(extensionDir, e.name));
+
+		for (const file of entries) {
+			const mod = await import(file);
+			const factory = mod.default;
+			if (typeof factory === "function") {
+				await factory(pi);
+			}
+		}
+	} catch (err) {
+		console.error(
+			"[pi-profile] Failed to load profile extensions from",
+			extensionDir,
+			err,
+		);
+	}
+}
+
+async function applyMetadata(
+	pi: ExtensionAPI,
+	ctx: ExtensionContext,
+	profile: ActiveProfile,
+): Promise<void> {
+	const { model: modelSpec, thinkingLevel } = profile.meta;
+	if (modelSpec) {
+		const found = findModel(ctx, modelSpec);
+		if ("error" in found) {
+			ctx.ui.notify(`Profile "${profile.id}": ${found.error}`, "warning");
+		} else {
+			const ok = await pi.setModel(found.model);
+			if (!ok) {
+				ctx.ui.notify(
+					`Profile "${profile.id}": no API key for ${modelSpec}`,
+					"warning",
+				);
+			}
+		}
+	}
+	if (thinkingLevel) {
+		pi.setThinkingLevel(thinkingLevel);
+	}
+}
+
+export default function (pi: ExtensionAPI) {
+	pi.registerFlag("profile", {
+		description: "Profile directory name under .rune/profiles",
+		type: "string",
+	});
+
+	let active: ActiveProfile | undefined;
+	let resolved = false;
+
+	function resolve(ctx?: ExtensionContext): {
+		profile?: ActiveProfile;
+		error?: string;
+	} {
+		const id = requestedId(pi);
+		if (id === RESERVED_DEFAULT) {
+			setStoredId(RESERVED_DEFAULT);
+			active = undefined;
+			resolved = true;
+			return {};
+		}
+		const loaded = loadProfile(id);
+		if (loaded.profile) {
+			setStoredId(id);
+			active = loaded.profile;
+			resolved = true;
+			// Load per-profile extensions (fire and forget)
+			loadProfileExtensions(pi, loaded.profile.extensionDir).catch(() => {});
+			return loaded;
+		}
+		setStoredId(RESERVED_DEFAULT);
+		active = undefined;
+		resolved = true;
+		if (ctx?.hasUI && loaded.error) {
+			ctx.ui.notify(loaded.error, "error");
+		}
+		return loaded;
+	}
+
+	function current(ctx?: ExtensionContext): ActiveProfile | undefined {
+		if (!resolved) resolve(ctx);
+		return active;
+	}
+
+	pi.on("session_start", async (event, ctx) => {
+		const { profile, error } = resolve(ctx);
+		updateStatus(ctx, profile);
+
+		if (error && profile) {
+			ctx.ui.notify(error, "warning");
+		}
+
+		if (!profile) return;
+
+		await applyMetadata(pi, ctx, profile);
+
+		if (event.reason === "startup" || event.reason === "new") {
+			ctx.ui.notify(`Profile: ${formatCurrent(profile)}`, "info");
+		}
+	});
+
+	pi.on("resources_discover", () => {
+		const profile = current();
+		if (!profile) return;
+		return {
+			skillPaths: profile.skillDir ? [profile.skillDir] : [],
+			promptPaths: profile.promptDir ? [profile.promptDir] : [],
+			themePaths: profile.themeDir ? [profile.themeDir] : [],
+		};
+	});
+
+	pi.on("before_agent_start", () => {
+		const prompt = current()?.systemPrompt;
+		if (!prompt) return;
+		return { systemPrompt: prompt };
+	});
+
+	async function switchToDefault(
+		ctx: ExtensionContext,
+		profile: ActiveProfile | undefined,
+	): Promise<void> {
+		if (!profile) {
+			ctx.ui.notify("Already on Default", "info");
+			return;
+		}
+		setStoredId(RESERVED_DEFAULT);
+		const result = await ctx.newSession();
+		if (result?.cancelled) {
+			setStoredId(profile.id);
+			ctx.ui.notify("Profile switch cancelled", "warning");
+		}
+	}
+
+	async function switchToNamed(
+		ctx: ExtensionContext,
+		profile: ActiveProfile | undefined,
+		name: string,
+	): Promise<void> {
+		const loaded = loadProfile(name);
+		if (!loaded.profile) {
+			ctx.ui.notify(loaded.error ?? `Profile "${name}" not found`, "error");
+			return;
+		}
+
+		if (profile?.id === name) {
+			ctx.ui.notify(`Already on profile ${formatCurrent(profile)}`, "info");
+			return;
+		}
+
+		const previous = profile?.id ?? RESERVED_DEFAULT;
+		setStoredId(name);
+		const result = await ctx.newSession();
+		if (result?.cancelled) {
+			setStoredId(previous);
+			ctx.ui.notify("Profile switch cancelled", "warning");
+		}
+	}
+
+	pi.registerCommand("profile", {
+		description: "Show or switch Pi profile (new session)",
+		getArgumentCompletions: (prefix) => {
+			const names = [RESERVED_DEFAULT, ...listProfileIds()];
+			const items = names
+				.filter((name) => name.startsWith(prefix))
+				.map((name) => ({
+					value: name,
+					label: name,
+					description:
+						name === RESERVED_DEFAULT
+							? "Default .rune setup"
+							: profileDir(name),
+				}));
+			return items.length > 0 ? items : null;
+		},
+		handler: async (args, ctx) => {
+			const name = args.trim().split(/\s+/)[0] ?? "";
+			const profile = current(ctx);
+
+			if (!name) {
+				ctx.ui.notify(`Current profile: ${formatCurrent(profile)}`, "info");
+				return;
+			}
+
+			if (name === RESERVED_DEFAULT) {
+				await switchToDefault(ctx, profile);
+				return;
+			}
+
+			await switchToNamed(ctx, profile, name);
+		},
+	});
+}

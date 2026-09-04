@@ -1,0 +1,64 @@
+---
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rune Docs</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        background: #0b0d10;
+        color: #e8eaed;
+      }
+      body {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 3rem 1.25rem;
+        line-height: 1.6;
+      }
+      code {
+        background: #1a1f2a;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+      }
+      pre {
+        background: #12151c;
+        border: 1px solid #1f2430;
+        border-radius: 10px;
+        padding: 1rem;
+        overflow-x: auto;
+      }
+      a {
+        color: #8eb0ff;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Rune</h1>
+    <p>
+      Runtime for multi-profile agents. Configure profiles and links with the CLI or web UI.
+      Data lives under <code>.rune/</code>.
+    </p>
+
+    <h2>Monorepo</h2>
+    <ul>
+      <li><code>packages/engine</code> — sessions, profiles extension</li>
+      <li><code>packages/api</code> — HTTP gateway</li>
+      <li><code>packages/sdk</code> — types + HTTP client</li>
+      <li><code>packages/cli</code> — <code>rune</code> binary</li>
+      <li><code>apps/web</code> — React config UI</li>
+      <li><code>apps/docs</code> — this site</li>
+    </ul>
+
+    <h2>Quick start</h2>
+    <pre><code>bun install
+bun run rune serve
+bun run dev:web
+bun run rune profile create researcher --name Researcher</code></pre>
+
+    <p>More docs will expand as the product solidifies.</p>
+  </body>
+</html>

@@ -1,0 +1,85 @@
+:root {
+	color-scheme: dark;
+	font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+	line-height: 1.5;
+	background: #0b0d10;
+	color: #e8eaed;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+}
+
+.page {
+	max-width: 720px;
+	margin: 0 auto;
+	padding: 2rem 1.25rem 4rem;
+}
+
+header h1 {
+	margin: 0;
+	letter-spacing: 0.04em;
+}
+
+section {
+	margin-top: 2rem;
+	padding: 1.25rem;
+	border: 1px solid #1f2430;
+	border-radius: 12px;
+	background: #12151c;
+}
+
+h2 {
+	margin: 0 0 1rem;
+	font-size: 1rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: #9aa3b2;
+}
+
+.row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+input {
+	flex: 1 1 140px;
+	padding: 0.6rem 0.75rem;
+	border-radius: 8px;
+	border: 1px solid #2a3140;
+	background: #0b0d10;
+	color: inherit;
+}
+
+button {
+	padding: 0.6rem 0.9rem;
+	border-radius: 8px;
+	border: 0;
+	background: #6c8cff;
+	color: #0b0d10;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+ul {
+	margin: 0;
+	padding-left: 1.1rem;
+}
+
+.muted {
+	color: #8b93a7;
+}
+
+.error {
+	color: #ff8e8e;
+	background: #2a1515;
+	border: 1px solid #5a2a2a;
+	padding: 0.75rem 1rem;
+	border-radius: 8px;
+}

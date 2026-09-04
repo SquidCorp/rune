@@ -1,0 +1,26 @@
+{
+	"name": "@rune/cli",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"license": "MIT",
+	"bin": {
+		"rune": "./src/bin.ts"
+	},
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"start": "bun run src/bin.ts",
+		"build": "echo \"@rune/cli: source package (no build)\"",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@rune/api": "workspace:*",
+		"@rune/sdk": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5"
+	}
+}
