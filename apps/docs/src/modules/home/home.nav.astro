@@ -1,11 +1,29 @@
 ---
+interface Props {
+	/** Current page key for active link styling and href resolution. */
+	current?: "home" | "cli-reference";
+}
+
+const { current = "home" } = Astro.props;
+const homePrefix = current === "home" ? "" : "/";
+
 const links = [
-	{ label: "Get started", href: "#quickstart", primary: true },
-	{ label: "Profiles", href: "#profiles" },
-	{ label: "Links", href: "#links" },
-	{ label: "Engine", href: "#engine" },
-	{ label: "CLI", href: "#cli" },
+	{
+		label: "Get started",
+		href: `${homePrefix}#quickstart`,
+		key: "quickstart",
+	},
+	{ label: "Profiles", href: `${homePrefix}#profiles`, key: "profiles" },
+	{ label: "Links", href: `${homePrefix}#links`, key: "links" },
+	{ label: "Engine", href: `${homePrefix}#engine`, key: "engine" },
+	{
+		label: "CLI",
+		href: current === "cli-reference" ? "/cli-reference" : `${homePrefix}#cli`,
+		key: "cli",
+	},
 ] as const;
+
+const activeKey = current === "cli-reference" ? "cli" : "quickstart";
 ---
 
 <header class="home-nav site-pad">
@@ -60,8 +78,9 @@ const links = [
 		{
 			links.map((link) => (
 				<a
-					class:list={["home-nav__link", { "home-nav__link--active": link.primary }]}
+					class:list={["home-nav__link", { "home-nav__link--active": link.key === activeKey }]}
 					href={link.href}
+					aria-current={link.key === activeKey ? "page" : undefined}
 				>
 					{link.label}
 				</a>
@@ -69,7 +88,7 @@ const links = [
 		}
 	</nav>
 
-	<a class="btn-primary" href="#quickstart">Get started</a>
+	<a class="btn-primary" href={`${homePrefix}#quickstart`}>Get started</a>
 </header>
 
 <style lang="scss">
