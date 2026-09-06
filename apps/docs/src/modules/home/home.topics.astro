@@ -1,0 +1,132 @@
+---
+const topics = [
+	{
+		id: "profiles",
+		n: "01",
+		title: "Profiles",
+		body: "System prompt, model, skills, and tools bound into one reusable identity. CLI: rune profile create.",
+	},
+	{
+		id: "links",
+		n: "02",
+		title: "Links",
+		body: "Chain profiles into a directed flow — output of one becomes input of the next. CLI: rune link create.",
+	},
+	{
+		id: "engine",
+		n: "03",
+		title: "Engine",
+		body: "One process drives every profile in the flow; HTTP control plane shared by CLI and web. CLI: rune serve.",
+	},
+	{
+		id: "topic-cli",
+		href: "#cli",
+		n: "04",
+		title: "CLI & API",
+		body: "Everything scriptable. Provision in a terminal, observe in the browser — same engine, same state.",
+	},
+] as const;
+---
+
+<section class="home-topics site-pad">
+	<p class="section-label">02 — Documentation</p>
+	<h2 class="home-topics__title">Four surfaces. One control plane.</h2>
+	<p class="home-topics__sub">
+		No orchestration framework to learn. Profiles, links, and the engine are the entire surface
+		area — configurable from the CLI or the web UI, stored flat under .rune/.
+	</p>
+
+	<div class="home-topics__grid">
+		{
+			topics.map((topic) => (
+				<a
+					class="card home-topics__card"
+					id={topic.id}
+					href={"href" in topic ? topic.href : `#${topic.id}`}
+				>
+					<span class="home-topics__index" aria-hidden="true">
+						{topic.n}
+					</span>
+					<h3 class="home-topics__card-title">{topic.title}</h3>
+					<p class="home-topics__card-body">{topic.body}</p>
+				</a>
+			))
+		}
+	</div>
+</section>
+
+<style lang="scss">
+	.home-topics {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-6);
+		padding-bottom: var(--spacing-16);
+
+		&__title {
+			margin: 0;
+			font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+			font-size: var(--text-3xl);
+			font-weight: var(--font-weight-semibold);
+			letter-spacing: var(--tracking-tight);
+			line-height: 44px;
+			color: var(--color-ink);
+		}
+
+		&__sub {
+			margin: 0;
+			max-width: 640px;
+			font-size: var(--text-base);
+			line-height: var(--leading-body);
+			color: var(--color-muted);
+		}
+
+		&__grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: var(--spacing-6);
+
+			@media (max-width: 900px) {
+				grid-template-columns: 1fr;
+			}
+		}
+
+		&__card {
+			position: relative;
+			overflow: hidden;
+			min-height: 180px;
+		}
+
+		&__index {
+			position: absolute;
+			top: var(--spacing-6);
+			right: var(--spacing-6);
+			font-family: var(--font-mono), ui-monospace, monospace;
+			font-size: var(--text-3xl);
+			font-weight: var(--font-weight-semibold);
+			letter-spacing: var(--tracking-tight);
+			line-height: 1;
+			color: var(--color-line-strong);
+			pointer-events: none;
+			user-select: none;
+		}
+
+		&__card-title {
+			position: relative;
+			margin: 0 0 var(--spacing-3);
+			font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+			font-size: var(--text-xl);
+			font-weight: var(--font-weight-semibold);
+			line-height: var(--leading-heading);
+			color: var(--color-ink);
+		}
+
+		&__card-body {
+			position: relative;
+			margin: 0;
+			max-width: 36ch;
+			font-size: var(--text-base);
+			line-height: var(--leading-body);
+			color: var(--color-muted);
+		}
+	}
+</style>

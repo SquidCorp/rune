@@ -1,10 +1,124 @@
 ---
+const commands = [
+	"bun install",
+	"bun run rune serve",
+	"bun run dev:web",
+	"bun run rune profile create researcher --name Researcher",
+] as const;
 ---
 
-<h2>Quick start</h2>
-<pre><code>bun install
-bun run rune serve
-bun run dev:web
-bun run rune profile create researcher --name Researcher</code></pre>
+<section id="quickstart" class="home-quickstart site-pad">
+	<p class="section-label">01 — Quick start</p>
+	<h2 class="home-quickstart__title">Install and run locally.</h2>
+	<p class="home-quickstart__sub">Bun workspace. One engine process. Data under .rune/.</p>
 
-<p>More docs will expand as the product solidifies.</p>
+	<div class="term" role="region" aria-label="Quick start commands">
+		<div class="term__bar">
+			<div class="term__dots" aria-hidden="true">
+				<span></span>
+				<span></span>
+				<span></span>
+			</div>
+			<span class="term__label">rune — zsh</span>
+		</div>
+		<div class="term__body">
+			{
+				commands.map((command) => (
+					<p class="term__line">
+						<span class="term__prompt">❯</span>
+						<span class="term__cmd">{command}</span>
+					</p>
+				))
+			}
+		</div>
+	</div>
+</section>
+
+<style lang="scss">
+	.home-quickstart {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-6);
+		padding-bottom: var(--spacing-16);
+
+		&__title {
+			margin: 0;
+			font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+			font-size: var(--text-3xl);
+			font-weight: var(--font-weight-semibold);
+			letter-spacing: var(--tracking-tight);
+			line-height: 44px;
+			color: var(--color-ink);
+		}
+
+		&__sub {
+			margin: 0;
+			font-size: var(--text-base);
+			line-height: var(--leading-body);
+			color: var(--color-muted);
+		}
+	}
+
+	.term {
+		background: var(--color-panel-raised);
+		border: 1px solid var(--color-line);
+		border-radius: var(--radius-lg);
+		overflow: hidden;
+		box-shadow: 0 24px 60px -20px #00000099;
+		max-width: 880px;
+
+		&__bar {
+			display: flex;
+			align-items: center;
+			gap: var(--spacing-4);
+			padding: 12px 16px;
+			background: var(--color-panel);
+			border-bottom: 1px solid var(--color-line);
+		}
+
+		&__dots {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+
+			span {
+				width: 10px;
+				height: 10px;
+				border-radius: var(--radius-full);
+				background: var(--color-line-strong);
+			}
+		}
+
+		&__label {
+			font-family: var(--font-mono), ui-monospace, monospace;
+			font-size: 11px;
+			color: var(--color-muted);
+		}
+
+		&__body {
+			display: flex;
+			flex-direction: column;
+			gap: var(--spacing-3);
+			padding: 28px;
+		}
+
+		&__line {
+			display: flex;
+			align-items: baseline;
+			gap: var(--spacing-3);
+			margin: 0;
+			font-family: var(--font-mono), ui-monospace, monospace;
+			font-size: var(--text-sm);
+			line-height: 1.5;
+		}
+
+		&__prompt {
+			color: var(--color-accent);
+			flex-shrink: 0;
+		}
+
+		&__cmd {
+			color: var(--color-ink);
+		}
+	}
+</style>

@@ -1,0 +1,19 @@
+{
+	"name": "@rune/tokens",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"license": "MIT",
+	"exports": {
+		".": "./src/index.ts",
+		"./css": "./src/tokens.css"
+	},
+	"scripts": {
+		"build": "echo \"@rune/tokens: source package (no build)\"",
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5"
+	}
+}

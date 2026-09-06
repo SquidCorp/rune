@@ -34,6 +34,10 @@ Every app and package is organized as **domain deep modules**.
 
 Wire **`@/*` → `src/*`** in every package/app `tsconfig.json` (`baseUrl: "."`, `paths`). For web, mirror in `apps/web/vite.config.ts` `resolve.alias`. Do **not** add shared path aliases in `tsconfig.base.json`.
 
+## Design
+
+- Always import tokens from the tokens packages for web page styling.
+
 ## Quality Gate
 
 Before saying your done always run, if relevant, those commands in this order:

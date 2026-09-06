@@ -10,9 +10,11 @@
 		"preview": "astro preview"
 	},
 	"dependencies": {
+		"@rune/tokens": "workspace:*",
 		"astro": "^5.1.0"
 	},
 	"devDependencies": {
+		"sass": "^1.104.0",
 		"typescript": "^5"
 	}
 }

@@ -15,6 +15,7 @@ Under the hood, Rune is built on the [pi](https://github.com/earendil-works/pi-c
 | `packages/engine` | `@rune/engine` | Domain: sessions, profile extension |
 | `packages/api` | `@rune/api` | HTTP gateway (embeds engine paths/store) |
 | `packages/sdk` | `@rune/sdk` | Shared types + HTTP client |
+| `packages/tokens` | `@rune/tokens` | Design tokens (colors, type, space, radius) |
 | `packages/cli` | `@rune/cli` | `rune` binary (`serve`, profile/link commands) |
 | `apps/web` | `@rune/web` | React SPA — config UI (+ canvas later) |
 | `apps/docs` | `@rune/docs` | Astro documentation site |

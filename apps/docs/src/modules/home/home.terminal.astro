@@ -1,0 +1,188 @@
+---
+const lines = [
+	{ kind: "cmd", text: "rune profile create researcher --name Researcher" },
+	{
+		kind: "ok",
+		text: 'profile "researcher" created — .rune/profiles/researcher',
+	},
+	{ kind: "cmd", text: "rune link create researcher writer" },
+	{ kind: "ok", text: 'link "researcher → writer" created' },
+	{ kind: "cmd", text: "rune serve" },
+	{
+		kind: "muted",
+		text: "engine listening on :8787 — 2 profiles, 1 link loaded",
+	},
+	{ kind: "cursor", text: "" },
+] as const;
+---
+
+<section id="cli" class="home-terminal site-pad">
+	<div class="home-terminal__copy">
+		<p class="section-label">03 — CLI</p>
+		<h2 class="home-terminal__title">Everything scriptable. Nothing hidden.</h2>
+		<p class="home-terminal__body">
+			The CLI and web UI share one HTTP control plane. Provision a profile in a terminal, then
+			watch it run in the browser — same engine, same state.
+		</p>
+	</div>
+
+	<div class="term" role="region" aria-label="CLI session sample">
+		<div class="term__bar">
+			<div class="term__dots" aria-hidden="true">
+				<span></span>
+				<span></span>
+				<span></span>
+			</div>
+			<span class="term__label">rune — zsh</span>
+		</div>
+		<div class="term__body">
+			{
+				lines.map((line) =>
+					line.kind === "cmd" ? (
+						<p class="term__line">
+							<span class="term__prompt">❯</span>
+							<span class="term__cmd">{line.text}</span>
+						</p>
+					) : line.kind === "ok" ? (
+						<p class="term__line term__line--ok">
+							<span class="term__mark">✓</span>
+							<span>{line.text}</span>
+						</p>
+					) : line.kind === "muted" ? (
+						<p class="term__line term__line--muted">{line.text}</p>
+					) : (
+						<p class="term__line">
+							<span class="term__prompt">❯</span>
+							<span class="term__cursor" aria-hidden="true">
+								█
+							</span>
+						</p>
+					),
+				)
+			}
+		</div>
+	</div>
+</section>
+
+<style lang="scss">
+	.home-terminal {
+		display: flex;
+		align-items: flex-start;
+		gap: var(--spacing-24);
+		padding-top: var(--spacing-20);
+		padding-bottom: var(--spacing-16);
+
+		@media (max-width: 900px) {
+			flex-direction: column;
+			gap: var(--spacing-10);
+		}
+
+		&__copy {
+			display: flex;
+			flex-direction: column;
+			gap: var(--spacing-6);
+			max-width: 400px;
+			flex-shrink: 0;
+		}
+
+		&__title {
+			margin: 0;
+			font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+			font-size: var(--text-3xl);
+			font-weight: var(--font-weight-semibold);
+			letter-spacing: var(--tracking-tight);
+			line-height: 44px;
+			color: var(--color-ink);
+		}
+
+		&__body {
+			margin: 0;
+			font-size: var(--text-base);
+			line-height: var(--leading-body);
+			color: var(--color-muted);
+		}
+	}
+
+	.term {
+		flex: 1;
+		min-width: 0;
+		background: var(--color-panel-raised);
+		border: 1px solid var(--color-line);
+		border-radius: var(--radius-lg);
+		overflow: hidden;
+		box-shadow: 0 24px 60px -20px #00000099;
+
+		&__bar {
+			display: flex;
+			align-items: center;
+			gap: var(--spacing-4);
+			padding: 12px 16px;
+			background: var(--color-panel);
+			border-bottom: 1px solid var(--color-line);
+		}
+
+		&__dots {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+
+			span {
+				width: 10px;
+				height: 10px;
+				border-radius: var(--radius-full);
+				background: var(--color-line-strong);
+			}
+		}
+
+		&__label {
+			font-family: var(--font-mono), ui-monospace, monospace;
+			font-size: 11px;
+			color: var(--color-muted);
+		}
+
+		&__body {
+			display: flex;
+			flex-direction: column;
+			gap: var(--spacing-3);
+			padding: 28px;
+		}
+
+		&__line {
+			display: flex;
+			align-items: baseline;
+			gap: var(--spacing-3);
+			margin: 0;
+			font-family: var(--font-mono), ui-monospace, monospace;
+			font-size: var(--text-sm);
+			line-height: 1.5;
+			color: var(--color-ink);
+
+			&--ok {
+				color: var(--color-status-positive);
+			}
+
+			&--muted {
+				color: var(--color-muted);
+				padding-left: calc(1ch + var(--spacing-3));
+			}
+		}
+
+		&__prompt {
+			color: var(--color-accent);
+			flex-shrink: 0;
+		}
+
+		&__mark {
+			flex-shrink: 0;
+			color: var(--color-status-positive);
+		}
+
+		&__cmd {
+			color: var(--color-ink);
+		}
+
+		&__cursor {
+			color: var(--color-ink-dim);
+		}
+	}
+</style>

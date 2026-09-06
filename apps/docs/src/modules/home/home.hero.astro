@@ -1,8 +1,118 @@
 ---
 ---
 
-<h1>Rune</h1>
-<p>
-  Runtime for multi-profile agents. Configure profiles and links with the CLI or web UI.
-  Data lives under <code>.rune/</code>.
-</p>
+<section class="home-hero site-pad">
+	<div class="home-hero__copy">
+		<p class="home-hero__eyebrow">
+			<span class="home-hero__dot" aria-hidden="true"></span>
+			<span>Runtime v0.1 — built on pi coding-agent SDK</span>
+		</p>
+		<h1 class="home-hero__title">
+			<span>Assemble your agents.</span>
+			<span>Run them as one.</span>
+		</h1>
+		<p class="home-hero__body">
+			Rune is a multi-profile agent runtime. Define specialized agents as profiles — system
+			prompt, model, skills, tools — link them into workflows, and run the whole thing through
+			a single engine.
+		</p>
+		<div class="home-hero__actions">
+			<a class="btn-primary btn-primary--lg" href="#quickstart">Get started →</a>
+			<a
+				class="btn-secondary btn-secondary--lg"
+				href="https://github.com/SquidCorp/rune"
+				target="_blank"
+				rel="noopener noreferrer">GitHub</a
+			>
+		</div>
+	</div>
+	<img
+		class="home-hero__art"
+		src="/snake-no-bg.png"
+		alt=""
+		width="320"
+		height="320"
+		decoding="async"
+	/>
+</section>
+
+<style lang="scss">
+	.home-hero {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--spacing-8);
+		padding-top: var(--spacing-24);
+		padding-bottom: var(--spacing-16);
+
+		&__copy {
+			display: flex;
+			flex-direction: column;
+			gap: var(--spacing-8);
+			max-width: 720px;
+			min-width: 0;
+		}
+
+		&__eyebrow {
+			display: inline-flex;
+			align-items: center;
+			gap: var(--spacing-3);
+			margin: 0;
+			font-family: var(--font-mono), ui-monospace, monospace;
+			font-size: var(--text-xs);
+			font-weight: var(--font-weight-medium);
+			letter-spacing: var(--tracking-wider);
+			line-height: var(--leading-label);
+			text-transform: uppercase;
+			color: var(--color-muted);
+		}
+
+		&__dot {
+			width: 6px;
+			height: 6px;
+			border-radius: var(--radius-full);
+			background: var(--color-accent);
+			box-shadow: #7b5cfacc 0 0 8px 1px;
+			flex-shrink: 0;
+		}
+
+		&__title {
+			display: flex;
+			flex-direction: column;
+			margin: 0;
+			font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+			font-size: var(--text-5xl);
+			font-weight: var(--font-weight-semibold);
+			letter-spacing: var(--tracking-tight);
+			line-height: var(--leading-display);
+			color: var(--color-ink);
+		}
+
+		&__body {
+			margin: 0;
+			max-width: 560px;
+			font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+			font-size: var(--text-md);
+			line-height: var(--leading-body);
+			color: var(--color-ink-dim);
+		}
+
+		&__actions {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: var(--spacing-4);
+		}
+
+		&__art {
+			width: 320px;
+			height: 320px;
+			object-fit: contain;
+			flex-shrink: 0;
+
+			@media (max-width: 900px) {
+				display: none;
+			}
+		}
+	}
+</style>

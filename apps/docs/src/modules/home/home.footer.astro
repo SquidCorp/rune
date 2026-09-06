@@ -1,0 +1,99 @@
+---
+const links = [
+	{ label: "Docs", href: "/" },
+	{
+		label: "GitHub",
+		href: "https://github.com/SquidCorp/rune",
+		external: true,
+	},
+	{
+		label: "MIT License",
+		href: "https://github.com/SquidCorp/rune/blob/main/LICENSE",
+		external: true,
+	},
+] as const;
+---
+
+<footer class="home-footer site-pad">
+	<div class="home-footer__left">
+		<svg
+			class="home-footer__mark"
+			width="16"
+			height="16"
+			viewBox="0 0 40 40"
+			fill="none"
+			aria-hidden="true"
+		>
+			<circle cx="20" cy="20" r="18" stroke="var(--color-line-strong)" stroke-width="2"
+			></circle>
+			<circle cx="20" cy="20" r="10" stroke="var(--color-muted)" stroke-width="1.5"></circle>
+		</svg>
+		<p class="home-footer__copy">© 2026 Rune — built on the pi coding-agent SDK</p>
+	</div>
+	<nav class="home-footer__links" aria-label="Footer">
+		{
+			links.map((link) =>
+				"external" in link && link.external ? (
+					<a href={link.href} target="_blank" rel="noopener noreferrer">
+						{link.label}
+					</a>
+				) : (
+					<a href={link.href}>{link.label}</a>
+				),
+			)
+		}
+	</nav>
+</footer>
+
+<style lang="scss">
+	.home-footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: var(--spacing-6);
+		padding-block: var(--spacing-8);
+		border-top: 1px solid var(--color-line);
+
+		&__left {
+			display: inline-flex;
+			align-items: center;
+			gap: var(--spacing-3);
+		}
+
+		&__mark {
+			flex-shrink: 0;
+			opacity: 0.8;
+		}
+
+		&__copy {
+			margin: 0;
+			font-family: var(--font-mono), ui-monospace, monospace;
+			font-size: var(--text-xs);
+			letter-spacing: var(--tracking-wide);
+			color: var(--color-muted);
+		}
+
+		&__links {
+			display: flex;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: var(--spacing-8);
+
+			a {
+				font-family: var(--font-mono), ui-monospace, monospace;
+				font-size: var(--text-xs);
+				font-weight: var(--font-weight-medium);
+				letter-spacing: var(--tracking-wider);
+				text-transform: uppercase;
+				color: var(--color-muted);
+				text-decoration: none;
+
+				&:hover {
+					color: var(--color-ink-dim);
+					text-decoration: none;
+				}
+			}
+		}
+	}
+</style>
