@@ -5,8 +5,7 @@
 	"type": "module",
 	"license": "MIT",
 	"exports": {
-		".": "./src/index.ts",
-		"./types": "./src/types.ts"
+		".": "./src/index.ts"
 	},
 	"scripts": {
 		"build": "echo \"@rune/sdk: source package (no build)\"",

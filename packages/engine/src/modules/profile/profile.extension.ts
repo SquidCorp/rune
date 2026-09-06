@@ -3,7 +3,7 @@
  *
  * Layout under the runtime data root:
  *   .rune/profiles/<id>/
- *     profile.json     optional { name, model, thinkingLevel }
+ *     profile.json     optional { name, model, thinkingLevel, glyph }
  *     SYSTEM.md        optional; replaces the system prompt when present
  *     skills/          unioned with default skills
  *     prompts/         unioned with default prompts
@@ -28,29 +28,24 @@ import type {
 	ExtensionAPI,
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
+import {
+	type ProfileMeta,
+	THINKING_LEVELS,
+	type ThinkingLevel,
+} from "@rune/sdk";
 
-import { profilesRoot, profileDir as resolveProfileDir } from "../paths.ts";
+import {
+	profilesRoot,
+	profileDir as resolveProfileDir,
+} from "../paths/index.ts";
+
+type ProfileExtensionContext = ExtensionContext & {
+	newSession: () => Promise<{ cancelled?: boolean } | undefined>;
+};
 
 const ACTIVE_STORE = Symbol.for("pi.profiles.activeId");
 const STATUS_ID = "profile";
 const RESERVED_DEFAULT = "default";
-
-const THINKING_LEVELS = [
-	"off",
-	"minimal",
-	"low",
-	"medium",
-	"high",
-	"xhigh",
-	"max",
-] as const;
-type ThinkingLevel = (typeof THINKING_LEVELS)[number];
-
-interface ProfileMeta {
-	name?: string;
-	model?: string;
-	thinkingLevel?: ThinkingLevel;
-}
 
 interface ActiveProfile {
 	id: string;
@@ -133,29 +128,41 @@ function readJsonObject(path: string): Record<string, unknown> | undefined {
 	return undefined;
 }
 
+function trimmedField(
+	raw: Record<string, unknown>,
+	key: string,
+): string | undefined {
+	const value = raw[key];
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function thinkingLevelFromRaw(
+	raw: Record<string, unknown>,
+	path: string,
+): { value?: ThinkingLevel; error?: string } {
+	if (typeof raw.thinkingLevel !== "string") return {};
+	if (!isThinkingLevel(raw.thinkingLevel)) {
+		return { error: `Invalid thinkingLevel "${raw.thinkingLevel}" in ${path}` };
+	}
+	return { value: raw.thinkingLevel };
+}
+
 function loadMeta(dir: string): { meta: ProfileMeta; error?: string } {
 	const path = join(dir, "profile.json");
 	if (!existsSync(path)) return { meta: {} };
 	const raw = readJsonObject(path);
 	if (!raw) return { meta: {}, error: `Invalid JSON: ${path}` };
 
-	const meta: ProfileMeta = {};
-	if (typeof raw.name === "string" && raw.name.trim()) {
-		meta.name = raw.name.trim();
-	}
-	if (typeof raw.model === "string" && raw.model.trim()) {
-		meta.model = raw.model.trim();
-	}
-	if (typeof raw.thinkingLevel === "string") {
-		if (isThinkingLevel(raw.thinkingLevel)) {
-			meta.thinkingLevel = raw.thinkingLevel;
-		} else {
-			return {
-				meta,
-				error: `Invalid thinkingLevel "${raw.thinkingLevel}" in ${path}`,
-			};
-		}
-	}
+	const thinking = thinkingLevelFromRaw(raw, path);
+	const meta: ProfileMeta = {
+		name: trimmedField(raw, "name"),
+		model: trimmedField(raw, "model"),
+		glyph: trimmedField(raw, "glyph"),
+		thinkingLevel: thinking.value,
+	};
+	if (thinking.error) return { meta, error: thinking.error };
 	return { meta };
 }
 
@@ -214,9 +221,11 @@ function requestedId(pi: ExtensionAPI): string {
 
 function formatCurrent(profile: ActiveProfile | undefined): string {
 	if (!profile) return "Default";
-	return profile.displayName === profile.id
-		? profile.id
-		: `${profile.displayName} (${profile.id})`;
+	const label =
+		profile.displayName === profile.id
+			? profile.id
+			: `${profile.displayName} (${profile.id})`;
+	return profile.meta.glyph ? `${profile.meta.glyph} ${label}` : label;
 }
 
 function updateStatus(
@@ -304,12 +313,65 @@ async function applyMetadata(
 	}
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.registerFlag("profile", {
-		description: "Profile directory name under .rune/profiles",
-		type: "string",
-	});
+interface ProfileController {
+	resolve: (ctx?: ExtensionContext) => {
+		profile?: ActiveProfile;
+		error?: string;
+	};
+	current: (ctx?: ExtensionContext) => ActiveProfile | undefined;
+	switchToDefault: (
+		ctx: ProfileExtensionContext,
+		profile: ActiveProfile | undefined,
+	) => Promise<void>;
+	switchToNamed: (
+		ctx: ProfileExtensionContext,
+		profile: ActiveProfile | undefined,
+		name: string,
+	) => Promise<void>;
+}
 
+async function switchToDefault(
+	ctx: ProfileExtensionContext,
+	profile: ActiveProfile | undefined,
+): Promise<void> {
+	if (!profile) {
+		ctx.ui.notify("Already on Default", "info");
+		return;
+	}
+	setStoredId(RESERVED_DEFAULT);
+	const result = await ctx.newSession();
+	if (result?.cancelled) {
+		setStoredId(profile.id);
+		ctx.ui.notify("Profile switch cancelled", "warning");
+	}
+}
+
+async function switchToNamed(
+	ctx: ProfileExtensionContext,
+	profile: ActiveProfile | undefined,
+	name: string,
+): Promise<void> {
+	const loaded = loadProfile(name);
+	if (!loaded.profile) {
+		ctx.ui.notify(loaded.error ?? `Profile "${name}" not found`, "error");
+		return;
+	}
+
+	if (profile?.id === name) {
+		ctx.ui.notify(`Already on profile ${formatCurrent(profile)}`, "info");
+		return;
+	}
+
+	const previous = profile?.id ?? RESERVED_DEFAULT;
+	setStoredId(name);
+	const result = await ctx.newSession();
+	if (result?.cancelled) {
+		setStoredId(previous);
+		ctx.ui.notify("Profile switch cancelled", "warning");
+	}
+}
+
+function createProfileController(pi: ExtensionAPI): ProfileController {
 	let active: ActiveProfile | undefined;
 	let resolved = false;
 
@@ -329,7 +391,6 @@ export default function (pi: ExtensionAPI) {
 			setStoredId(id);
 			active = loaded.profile;
 			resolved = true;
-			// Load per-profile extensions (fire and forget)
 			loadProfileExtensions(pi, loaded.profile.extensionDir).catch(() => {});
 			return loaded;
 		}
@@ -347,8 +408,15 @@ export default function (pi: ExtensionAPI) {
 		return active;
 	}
 
+	return { resolve, current, switchToDefault, switchToNamed };
+}
+
+function registerSessionHooks(
+	pi: ExtensionAPI,
+	controller: ProfileController,
+): void {
 	pi.on("session_start", async (event, ctx) => {
-		const { profile, error } = resolve(ctx);
+		const { profile, error } = controller.resolve(ctx);
 		updateStatus(ctx, profile);
 
 		if (error && profile) {
@@ -365,7 +433,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.on("resources_discover", () => {
-		const profile = current();
+		const profile = controller.current();
 		if (!profile) return;
 		return {
 			skillPaths: profile.skillDir ? [profile.skillDir] : [],
@@ -375,52 +443,16 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.on("before_agent_start", () => {
-		const prompt = current()?.systemPrompt;
+		const prompt = controller.current()?.systemPrompt;
 		if (!prompt) return;
 		return { systemPrompt: prompt };
 	});
+}
 
-	async function switchToDefault(
-		ctx: ExtensionContext,
-		profile: ActiveProfile | undefined,
-	): Promise<void> {
-		if (!profile) {
-			ctx.ui.notify("Already on Default", "info");
-			return;
-		}
-		setStoredId(RESERVED_DEFAULT);
-		const result = await ctx.newSession();
-		if (result?.cancelled) {
-			setStoredId(profile.id);
-			ctx.ui.notify("Profile switch cancelled", "warning");
-		}
-	}
-
-	async function switchToNamed(
-		ctx: ExtensionContext,
-		profile: ActiveProfile | undefined,
-		name: string,
-	): Promise<void> {
-		const loaded = loadProfile(name);
-		if (!loaded.profile) {
-			ctx.ui.notify(loaded.error ?? `Profile "${name}" not found`, "error");
-			return;
-		}
-
-		if (profile?.id === name) {
-			ctx.ui.notify(`Already on profile ${formatCurrent(profile)}`, "info");
-			return;
-		}
-
-		const previous = profile?.id ?? RESERVED_DEFAULT;
-		setStoredId(name);
-		const result = await ctx.newSession();
-		if (result?.cancelled) {
-			setStoredId(previous);
-			ctx.ui.notify("Profile switch cancelled", "warning");
-		}
-	}
-
+function registerProfileCommand(
+	pi: ExtensionAPI,
+	controller: ProfileController,
+): void {
 	pi.registerCommand("profile", {
 		description: "Show or switch Pi profile (new session)",
 		getArgumentCompletions: (prefix) => {
@@ -439,7 +471,7 @@ export default function (pi: ExtensionAPI) {
 		},
 		handler: async (args, ctx) => {
 			const name = args.trim().split(/\s+/)[0] ?? "";
-			const profile = current(ctx);
+			const profile = controller.current(ctx);
 
 			if (!name) {
 				ctx.ui.notify(`Current profile: ${formatCurrent(profile)}`, "info");
@@ -447,11 +479,22 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			if (name === RESERVED_DEFAULT) {
-				await switchToDefault(ctx, profile);
+				await controller.switchToDefault(ctx, profile);
 				return;
 			}
 
-			await switchToNamed(ctx, profile, name);
+			await controller.switchToNamed(ctx, profile, name);
 		},
 	});
+}
+
+export default function (pi: ExtensionAPI) {
+	pi.registerFlag("profile", {
+		description: "Profile directory name under .rune/profiles",
+		type: "string",
+	});
+
+	const controller = createProfileController(pi);
+	registerSessionHooks(pi, controller);
+	registerProfileCommand(pi, controller);
 }

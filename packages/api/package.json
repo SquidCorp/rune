@@ -8,8 +8,8 @@
 		".": "./src/index.ts"
 	},
 	"scripts": {
-		"dev": "bun run --watch src/server.ts",
-		"start": "bun run src/server.ts",
+		"dev": "bun run --watch src/app.ts",
+		"start": "bun run src/app.ts",
 		"build": "echo \"@rune/api: source package (no build)\"",
 		"typecheck": "tsc --noEmit"
 	},

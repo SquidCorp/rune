@@ -12,7 +12,8 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@earendil-works/pi-coding-agent": "latest"
+		"@earendil-works/pi-coding-agent": "latest",
+		"@rune/sdk": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",

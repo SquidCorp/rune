@@ -1,10 +1,11 @@
-export { RuneClient, type RuneClientOptions } from "./client.ts";
+export { RuneClient, type RuneClientOptions } from "./modules/client/index.ts";
+export type { HealthResponse } from "./modules/health/index.ts";
+export type { CreateLinkInput, Link } from "./modules/link/index.ts";
 export type {
-	CreateLinkInput,
 	CreateProfileInput,
-	HealthResponse,
-	Link,
 	Profile,
 	ProfileMeta,
 	ThinkingLevel,
-} from "./types.ts";
+	UpdateProfileInput,
+} from "./modules/profile/index.ts";
+export { THINKING_LEVELS } from "./modules/profile/index.ts";

@@ -1,3 +1,10 @@
-export { default as profileExtension } from "./extensions/profile.ts";
-export { profileDir, profilesRoot, runeDir } from "./paths.ts";
-export { type CreateRuneSessionOptions, createRuneSession } from "./session.ts";
+export {
+	profileDir,
+	profilesRoot,
+	runeDir,
+} from "./modules/paths/index.ts";
+export { default as profileExtension } from "./modules/profile/index.ts";
+export {
+	type CreateRuneSessionOptions,
+	createRuneSession,
+} from "./modules/session/index.ts";

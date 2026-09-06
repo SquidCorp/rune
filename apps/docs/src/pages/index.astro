@@ -1,4 +1,7 @@
 ---
+import HomeHero from "@/modules/home/home.hero.astro";
+import HomePackages from "@/modules/home/home.packages.astro";
+import HomeQuickstart from "@/modules/home/home.quickstart.astro";
 ---
 
 <html lang="en">
@@ -37,28 +40,8 @@
     </style>
   </head>
   <body>
-    <h1>Rune</h1>
-    <p>
-      Runtime for multi-profile agents. Configure profiles and links with the CLI or web UI.
-      Data lives under <code>.rune/</code>.
-    </p>
-
-    <h2>Monorepo</h2>
-    <ul>
-      <li><code>packages/engine</code> — sessions, profiles extension</li>
-      <li><code>packages/api</code> — HTTP gateway</li>
-      <li><code>packages/sdk</code> — types + HTTP client</li>
-      <li><code>packages/cli</code> — <code>rune</code> binary</li>
-      <li><code>apps/web</code> — React config UI</li>
-      <li><code>apps/docs</code> — this site</li>
-    </ul>
-
-    <h2>Quick start</h2>
-    <pre><code>bun install
-bun run rune serve
-bun run dev:web
-bun run rune profile create researcher --name Researcher</code></pre>
-
-    <p>More docs will expand as the product solidifies.</p>
+    <HomeHero />
+    <HomePackages />
+    <HomeQuickstart />
   </body>
 </html>

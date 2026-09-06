@@ -2,11 +2,12 @@ export {
 	createHandler,
 	type StartServerOptions,
 	startServer,
-} from "./server.ts";
+} from "./app.ts";
+export { createLink, listLinks } from "./modules/link/index.ts";
 export {
-	createLink,
 	createProfile,
+	deleteProfile,
 	getProfile,
-	listLinks,
 	listProfiles,
-} from "./store.ts";
+	updateProfile,
+} from "./modules/profile/index.ts";

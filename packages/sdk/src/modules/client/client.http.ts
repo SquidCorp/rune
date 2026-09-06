@@ -1,10 +1,10 @@
+import type { HealthResponse } from "../health/index.ts";
+import type { CreateLinkInput, Link } from "../link/index.ts";
 import type {
-	CreateLinkInput,
 	CreateProfileInput,
-	HealthResponse,
-	Link,
 	Profile,
-} from "./types.ts";
+	UpdateProfileInput,
+} from "../profile/index.ts";
 
 export interface RuneClientOptions {
 	baseUrl?: string;
@@ -62,6 +62,20 @@ export class RuneClient {
 		return this.request<Profile>("/profiles", {
 			method: "POST",
 			body: JSON.stringify(input),
+		});
+	}
+
+	updateProfile(id: string, input: UpdateProfileInput): Promise<Profile> {
+		return this.request<Profile>(`/profiles/${encodeURIComponent(id)}`, {
+			method: "PATCH",
+			body: JSON.stringify(input),
+		});
+	}
+
+	deleteProfile(id: string, options: { force?: boolean } = {}): Promise<void> {
+		const query = options.force ? "?force=true" : "";
+		return this.request<void>(`/profiles/${encodeURIComponent(id)}${query}`, {
+			method: "DELETE",
 		});
 	}
 

@@ -7,12 +7,12 @@ import {
 	SessionManager,
 } from "@earendil-works/pi-coding-agent";
 
-import piProfileExtension from "./extensions/profile.ts";
-import { runeDir } from "./paths.ts";
+import { runeDir } from "../paths/index.ts";
+import profileExtensionFactory from "../profile/index.ts";
 
 const profileExtension: InlineExtension = {
 	name: "pi-profile",
-	factory: piProfileExtension,
+	factory: profileExtensionFactory,
 };
 
 export interface CreateRuneSessionOptions {

@@ -55,6 +55,9 @@ bun run dev:docs
 bun run rune serve
 bun run rune profile create researcher --name Researcher
 bun run rune profile list
+bun run rune profile show researcher
+bun run rune profile set researcher --model anthropic/claude-sonnet-4-5
+bun run rune profile delete researcher
 bun run rune link create researcher writer
 bun run rune health
 ```
@@ -76,5 +79,7 @@ engine  ←  api  ←  cli (serve embeds api; other cmds use sdk)
             sdk  ←  web
 docs (standalone)
 ```
+
+In-package code lives under `src/modules/<domain>` with a single facade per domain.
 
 Web and CLI never import `@rune/engine`. Only the API (and engine internals) touch `.rune` on disk.
