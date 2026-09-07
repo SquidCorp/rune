@@ -8,6 +8,7 @@ export {
 	getGraph,
 	listGraphs,
 	parseGraphToml,
+	runGraph,
 } from "./graph.store.ts";
 export {
 	type GraphValidationContext,

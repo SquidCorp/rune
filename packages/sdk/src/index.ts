@@ -4,6 +4,9 @@ export type {
 	GraphCheckResult,
 	GraphEdge,
 	GraphNode,
+	GraphRunRequest,
+	GraphRunResult,
+	GraphRunStep,
 	GraphValidationIssue,
 } from "./modules/graph/index.ts";
 export type { HealthResponse } from "./modules/health/index.ts";

@@ -1,4 +1,6 @@
-import { checkGraph, getGraph, listGraphs } from "./graph.store.ts";
+import type { GraphCheckResult, GraphRunRequest } from "@rune/sdk";
+
+import { checkGraph, getGraph, listGraphs, runGraph } from "./graph.store.ts";
 
 type RouteHandler = (req: Request, cwd: string) => Response | Promise<Response>;
 
@@ -27,16 +29,30 @@ function storeError(err: unknown, fallback: string): Response {
 	return error(message);
 }
 
+function isGraphCheckResult(value: unknown): value is GraphCheckResult {
+	if (value === null || typeof value !== "object") return false;
+	const row = value as { graphId?: unknown; ok?: unknown; issues?: unknown };
+	return (
+		typeof row.graphId === "string" &&
+		typeof row.ok === "boolean" &&
+		Array.isArray(row.issues)
+	);
+}
+
 export function matchGraphRoute(
 	pathname: string,
-): { id: string; check: boolean } | undefined {
+): { id: string; action: "get" | "check" | "run" } | undefined {
+	const runMatch = pathname.match(/^\/graphs\/([^/]+)\/run$/);
+	if (runMatch?.[1] !== undefined) {
+		return { id: decodeURIComponent(runMatch[1]), action: "run" };
+	}
 	const checkMatch = pathname.match(/^\/graphs\/([^/]+)\/check$/);
 	if (checkMatch?.[1] !== undefined) {
-		return { id: decodeURIComponent(checkMatch[1]), check: true };
+		return { id: decodeURIComponent(checkMatch[1]), action: "check" };
 	}
 	const getMatch = pathname.match(/^\/graphs\/([^/]+)$/);
 	if (getMatch?.[1] !== undefined) {
-		return { id: decodeURIComponent(getMatch[1]), check: false };
+		return { id: decodeURIComponent(getMatch[1]), action: "get" };
 	}
 	return undefined;
 }
@@ -59,6 +75,37 @@ function handleCheckGraph(id: string, cwd: string): Response {
 	}
 }
 
+async function handleRunGraph(
+	req: Request,
+	id: string,
+	cwd: string,
+): Promise<Response> {
+	let body: GraphRunRequest;
+	try {
+		body = (await req.json()) as GraphRunRequest;
+	} catch {
+		return error("Invalid JSON body");
+	}
+	if (typeof body.prompt !== "string") {
+		return error("prompt is required and must be a string");
+	}
+
+	try {
+		// Synchronous HTTP for v1 — long-running model chain; no job queue.
+		const result = await runGraph(id, body.prompt, cwd);
+		return json(result);
+	} catch (err) {
+		const check =
+			err instanceof Error
+				? (err as Error & { check?: GraphCheckResult }).check
+				: undefined;
+		if (check && isGraphCheckResult(check)) {
+			return json(check, 400);
+		}
+		return storeError(err, "Failed to run graph");
+	}
+}
+
 export const graphExactRoutes: Record<string, RouteHandler> = {
 	"GET /graphs": (_req, cwd) => json(listGraphs(cwd)),
 };
@@ -69,10 +116,15 @@ export async function handleGraphApi(options: {
 	pathname: string;
 	cwd: string;
 }): Promise<Response | undefined> {
-	const { method, pathname, cwd } = options;
+	const { req, method, pathname, cwd } = options;
 	const matched = matchGraphRoute(pathname);
 	if (matched === undefined) return undefined;
+
+	if (matched.action === "run") {
+		if (method !== "POST") return undefined;
+		return handleRunGraph(req, matched.id, cwd);
+	}
 	if (method !== "GET") return undefined;
-	if (matched.check) return handleCheckGraph(matched.id, cwd);
+	if (matched.action === "check") return handleCheckGraph(matched.id, cwd);
 	return handleGetGraph(matched.id, cwd);
 }

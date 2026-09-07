@@ -1,11 +1,61 @@
-import type { Graph, GraphCheckResult, RuneClient } from "@rune/sdk";
+import { readFileSync, writeFileSync } from "node:fs";
+import type {
+	Graph,
+	GraphCheckResult,
+	GraphRunResult,
+	RuneClient,
+} from "@rune/sdk";
 
 function requireGraphId(rest: string[], usage: string): string {
 	const id = rest[0];
-	if (!id) {
+	if (!id || id.startsWith("--")) {
 		throw new Error(usage);
 	}
 	return id;
+}
+
+function flagValue(args: string[], name: string): string | undefined {
+	const idx = args.indexOf(name);
+	if (idx === -1) return undefined;
+	const value = args[idx + 1];
+	if (value === undefined || value.startsWith("--") || !value.trim()) {
+		throw new Error(`${name} requires a value`);
+	}
+	return value;
+}
+
+function hasFlag(args: string[], name: string): boolean {
+	return args.includes(name);
+}
+
+function readPromptFile(path: string): string {
+	try {
+		return readFileSync(path, "utf-8");
+	} catch {
+		throw new Error(`Cannot read --prompt-file "${path}"`);
+	}
+}
+
+/** Exactly one of --prompt / --prompt-file required for graph run. */
+function readRequiredPrompt(args: string[]): string {
+	const hasPrompt = args.includes("--prompt");
+	const hasFile = args.includes("--prompt-file");
+	if (hasPrompt && hasFile) {
+		throw new Error("Use either --prompt or --prompt-file, not both");
+	}
+	if (!hasPrompt && !hasFile) {
+		throw new Error(
+			"Usage: rune graph run <graph-id> --prompt <string> | --prompt-file <path> [--log <path>] [--verbose]",
+		);
+	}
+	if (hasFile) {
+		const path = flagValue(args, "--prompt-file");
+		if (!path) throw new Error("--prompt-file requires a value");
+		return readPromptFile(path);
+	}
+	const prompt = flagValue(args, "--prompt");
+	if (prompt === undefined) throw new Error("--prompt requires a value");
+	return prompt;
 }
 
 async function cmdGraphList(client: RuneClient): Promise<void> {
@@ -67,6 +117,54 @@ async function cmdGraphCheck(
 	}
 }
 
+function writeRunLog(path: string, result: GraphRunResult): void {
+	try {
+		writeFileSync(path, `${JSON.stringify(result, null, 2)}\n`, "utf-8");
+	} catch {
+		throw new Error(`Cannot write --log "${path}"`);
+	}
+}
+
+function printVerboseStep(result: GraphRunResult): void {
+	for (const step of result.steps) {
+		console.error(`[graph] ${step.nodeId} (${step.profile}) start`);
+		if (step.status === "ok") {
+			console.error(
+				`[graph] ${step.nodeId} ok (${step.output?.length ?? 0} chars)`,
+			);
+			continue;
+		}
+		console.error(`[graph] ${step.nodeId} error (${step.error ?? "failed"})`);
+	}
+}
+
+function emitGraphRunResult(
+	id: string,
+	result: GraphRunResult,
+	logPath: string | undefined,
+): void {
+	if (logPath) writeRunLog(logPath, result);
+	if (result.status === "error") {
+		throw new Error(result.error ?? `Graph "${id}" run failed`);
+	}
+	// Final sink output only on stdout (intermediates never printed here).
+	process.stdout.write(`${result.final ?? ""}\n`);
+}
+
+async function cmdGraphRun(client: RuneClient, rest: string[]): Promise<void> {
+	const usage =
+		"Usage: rune graph run <graph-id> --prompt <string> | --prompt-file <path> [--log <path>] [--verbose]";
+	const id = requireGraphId(rest, usage);
+	const prompt = readRequiredPrompt(rest);
+	const logPath = flagValue(rest, "--log");
+	const verbose = hasFlag(rest, "--verbose");
+
+	if (verbose) console.error(`[graph] run ${id}`);
+	const result = await client.runGraph(id, { prompt });
+	if (verbose) printVerboseStep(result);
+	emitGraphRunResult(id, result, logPath);
+}
+
 export async function runGraphCommand(options: {
 	client: RuneClient;
 	sub: string | undefined;
@@ -84,6 +182,10 @@ export async function runGraphCommand(options: {
 	}
 	if (sub === "check") {
 		await cmdGraphCheck(client, rest);
+		return;
+	}
+	if (sub === "run") {
+		await cmdGraphRun(client, rest);
 		return;
 	}
 	printHelp();

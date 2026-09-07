@@ -1,4 +1,9 @@
-import type { Graph, GraphCheckResult } from "../graph/index.ts";
+import type {
+	Graph,
+	GraphCheckResult,
+	GraphRunRequest,
+	GraphRunResult,
+} from "../graph/index.ts";
 import type { HealthResponse } from "../health/index.ts";
 import type { CreateLinkInput, Link } from "../link/index.ts";
 import type {
@@ -104,4 +109,62 @@ export class RuneClient {
 			`/graphs/${encodeURIComponent(id)}/check`,
 		);
 	}
+
+	/**
+	 * Run a validated linear graph. Long-running synchronous HTTP for v1.
+	 * Mid-chain failures still return GraphRunResult (status: "error").
+	 * Validation failures throw with the check payload message.
+	 */
+	async runGraph(id: string, body: GraphRunRequest): Promise<GraphRunResult> {
+		const path = `/graphs/${encodeURIComponent(id)}/run`;
+		const res = await this.fetchFn(`${this.baseUrl}${path}`, {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(body),
+		});
+
+		const text = await res.text().catch(() => "");
+		let data: unknown;
+		try {
+			data = text ? JSON.parse(text) : undefined;
+		} catch {
+			data = undefined;
+		}
+
+		if (res.status === 400 && isGraphCheckResult(data)) {
+			throw new Error(formatCheckFailure(data));
+		}
+
+		if (!res.ok) {
+			const message = apiErrorMessage(data) ?? (text || path);
+			throw new Error(`Rune API ${res.status} ${res.statusText}: ${message}`);
+		}
+
+		return data as GraphRunResult;
+	}
+}
+
+function isGraphCheckResult(value: unknown): value is GraphCheckResult {
+	if (value === null || typeof value !== "object") return false;
+	const row = value as { graphId?: unknown; ok?: unknown; issues?: unknown };
+	return (
+		typeof row.graphId === "string" &&
+		typeof row.ok === "boolean" &&
+		Array.isArray(row.issues)
+	);
+}
+
+function apiErrorMessage(data: unknown): string | undefined {
+	if (data === null || typeof data !== "object") return undefined;
+	if (!("error" in data)) return undefined;
+	const error = data.error;
+	return typeof error === "string" ? error : undefined;
+}
+
+function formatCheckFailure(result: GraphCheckResult): string {
+	const lines = [`Graph "${result.graphId}" invalid:`];
+	for (const item of result.issues) {
+		lines.push(`  - ${item.code}: ${item.message}`);
+	}
+	return lines.join("\n");
 }

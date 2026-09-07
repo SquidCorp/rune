@@ -1,6 +1,16 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { graphPath, graphsRoot } from "@rune/engine";
-import type { Graph, GraphCheckResult, GraphEdge, GraphNode } from "@rune/sdk";
+import {
+	runGraph as engineRunGraph,
+	graphPath,
+	graphsRoot,
+} from "@rune/engine";
+import type {
+	Graph,
+	GraphCheckResult,
+	GraphEdge,
+	GraphNode,
+	GraphRunResult,
+} from "@rune/sdk";
 import { parse as parseToml } from "smol-toml";
 import { getProfile } from "../profile/index.ts";
 import { validateGraph } from "./graph.validate.ts";
@@ -170,5 +180,45 @@ export function checkGraph(
 	}
 	return validateGraph(graph, {
 		profileExists: (profileId) => getProfile(profileId, cwd) !== undefined,
+	});
+}
+
+/**
+ * Validate then execute a linear graph (synchronous HTTP v1 — no job queue).
+ * Returns a run result even when a mid-chain node fails (status: "error").
+ * Validation failure throws with issues attached for HTTP 400.
+ */
+export async function runGraph(
+	id: string,
+	prompt: string,
+	cwd: string = process.cwd(),
+): Promise<GraphRunResult> {
+	const graph = getGraph(id, cwd);
+	if (!graph) {
+		throw new Error(`Graph "${id}" not found`);
+	}
+	const check = validateGraph(graph, {
+		profileExists: (profileId) => getProfile(profileId, cwd) !== undefined,
+	});
+	if (!check.ok || !check.path) {
+		const err = new Error(`Graph "${id}" invalid`) as Error & {
+			check: GraphCheckResult;
+		};
+		err.check = check;
+		throw err;
+	}
+	const byId = new Map(graph.nodes.map((node) => [node.id, node]));
+	const ordered = check.path.map((nodeId) => {
+		const node = byId.get(nodeId);
+		if (!node) {
+			throw new Error(`Graph "${id}" path references missing node "${nodeId}"`);
+		}
+		return node;
+	});
+	return engineRunGraph({
+		graphId: id,
+		nodes: ordered,
+		prompt,
+		cwd,
 	});
 }

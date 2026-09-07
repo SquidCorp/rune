@@ -3,5 +3,8 @@ export type {
 	GraphCheckResult,
 	GraphEdge,
 	GraphNode,
+	GraphRunRequest,
+	GraphRunResult,
+	GraphRunStep,
 	GraphValidationIssue,
 } from "./graph.types.ts";

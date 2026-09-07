@@ -21,6 +21,7 @@ Usage:
   rune graph list
   rune graph show <graph-id>
   rune graph check <graph-id>
+  rune graph run <graph-id> --prompt <string> | --prompt-file <path> [--log <path>] [--verbose]
   rune health
   rune help
 `);

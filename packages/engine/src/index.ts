@@ -1,4 +1,12 @@
 export {
+	buildNodeUserMessage,
+	type GraphNodeRunner,
+	getFinalAssistantText,
+	type RunGraphOptions,
+	runGraph,
+	runGraphNodeWithSession,
+} from "./modules/graph/index.ts";
+export {
 	graphPath,
 	graphsRoot,
 	profileDir,
