@@ -13,3 +13,12 @@ export function profilesRoot(cwd: string = process.cwd()): string {
 export function profileDir(id: string, cwd: string = process.cwd()): string {
 	return join(profilesRoot(cwd), id);
 }
+
+/** Graph TOML files live under `.rune/graphs/<id>.toml`. */
+export function graphsRoot(cwd: string = process.cwd()): string {
+	return join(runeDir(cwd), "graphs");
+}
+
+export function graphPath(id: string, cwd: string = process.cwd()): string {
+	return join(graphsRoot(cwd), `${id}.toml`);
+}

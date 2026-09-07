@@ -1,4 +1,5 @@
 export { RuneClient, type RuneClientOptions } from "./modules/client/index.ts";
+export type { Graph, GraphEdge, GraphNode } from "./modules/graph/index.ts";
 export type { HealthResponse } from "./modules/health/index.ts";
 export type { CreateLinkInput, Link } from "./modules/link/index.ts";
 export type {

@@ -1,4 +1,6 @@
 export {
+	graphPath,
+	graphsRoot,
 	profileDir,
 	profilesRoot,
 	runeDir,

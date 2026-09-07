@@ -30,6 +30,7 @@ All runtime data lives under **`.rune/`** (cwd-relative):
     profile.json
     SYSTEM.md
     skills/ prompts/ themes/ extensions/
+  graphs/<id>.toml
   links.json
   # plus pi agent session/resource files
 ```

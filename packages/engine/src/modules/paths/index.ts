@@ -1,1 +1,7 @@
-export { profileDir, profilesRoot, runeDir } from "./paths.resolve.ts";
+export {
+	graphPath,
+	graphsRoot,
+	profileDir,
+	profilesRoot,
+	runeDir,
+} from "./paths.resolve.ts";
