@@ -1,1 +1,7 @@
-export type { Graph, GraphEdge, GraphNode } from "./graph.types.ts";
+export type {
+	Graph,
+	GraphCheckResult,
+	GraphEdge,
+	GraphNode,
+	GraphValidationIssue,
+} from "./graph.types.ts";

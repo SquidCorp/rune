@@ -1,3 +1,4 @@
+import { graphExactRoutes, handleGraphApi } from "./modules/graph/index.ts";
 import { healthExactRoutes } from "./modules/health/index.ts";
 import { linkExactRoutes } from "./modules/link/index.ts";
 import {
@@ -51,6 +52,7 @@ const exactRoutes: Record<string, RouteHandler> = {
 	...healthExactRoutes,
 	...profileExactRoutes,
 	...linkExactRoutes,
+	...graphExactRoutes,
 };
 
 async function handleApi(options: {
@@ -63,7 +65,10 @@ async function handleApi(options: {
 	const exact = exactRoutes[`${method} ${pathname}`];
 	if (exact) return exact(req, cwd);
 
-	return handleProfileApi({ req, method, pathname, cwd });
+	return (
+		(await handleProfileApi({ req, method, pathname, cwd })) ??
+		(await handleGraphApi({ req, method, pathname, cwd }))
+	);
 }
 
 export function createHandler(options: StartServerOptions = {}) {

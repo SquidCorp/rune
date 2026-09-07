@@ -1,7 +1,9 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { graphPath, graphsRoot } from "@rune/engine";
-import type { Graph, GraphEdge, GraphNode } from "@rune/sdk";
+import type { Graph, GraphCheckResult, GraphEdge, GraphNode } from "@rune/sdk";
 import { parse as parseToml } from "smol-toml";
+import { getProfile } from "../profile/index.ts";
+import { validateGraph } from "./graph.validate.ts";
 
 /** Same safe-id dialect as profiles (filename stem). */
 function isSafeGraphId(id: string): boolean {
@@ -153,4 +155,20 @@ export function getGraph(
 	cwd: string = process.cwd(),
 ): Graph | undefined {
 	return loadGraphFile(id, cwd);
+}
+
+/**
+ * Load + validate a graph. Missing id throws; malformed TOML throws from getGraph.
+ */
+export function checkGraph(
+	id: string,
+	cwd: string = process.cwd(),
+): GraphCheckResult {
+	const graph = getGraph(id, cwd);
+	if (!graph) {
+		throw new Error(`Graph "${id}" not found`);
+	}
+	return validateGraph(graph, {
+		profileExists: (profileId) => getProfile(profileId, cwd) !== undefined,
+	});
 }

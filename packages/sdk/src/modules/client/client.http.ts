@@ -1,3 +1,4 @@
+import type { Graph, GraphCheckResult } from "../graph/index.ts";
 import type { HealthResponse } from "../health/index.ts";
 import type { CreateLinkInput, Link } from "../link/index.ts";
 import type {
@@ -88,5 +89,19 @@ export class RuneClient {
 			method: "POST",
 			body: JSON.stringify(input),
 		});
+	}
+
+	listGraphs(): Promise<Graph[]> {
+		return this.request<Graph[]>("/graphs");
+	}
+
+	getGraph(id: string): Promise<Graph> {
+		return this.request<Graph>(`/graphs/${encodeURIComponent(id)}`);
+	}
+
+	checkGraph(id: string): Promise<GraphCheckResult> {
+		return this.request<GraphCheckResult>(
+			`/graphs/${encodeURIComponent(id)}/check`,
+		);
 	}
 }

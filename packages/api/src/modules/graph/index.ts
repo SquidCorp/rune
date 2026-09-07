@@ -1,1 +1,15 @@
-export { getGraph, listGraphs, parseGraphToml } from "./graph.store.ts";
+export {
+	graphExactRoutes,
+	handleGraphApi,
+	matchGraphRoute,
+} from "./graph.http.ts";
+export {
+	checkGraph,
+	getGraph,
+	listGraphs,
+	parseGraphToml,
+} from "./graph.store.ts";
+export {
+	type GraphValidationContext,
+	validateGraph,
+} from "./graph.validate.ts";
