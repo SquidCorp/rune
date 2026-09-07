@@ -1,3 +1,4 @@
+import { resolveRuneCwd, runeDir } from "@rune/engine";
 import { graphExactRoutes, handleGraphApi } from "./modules/graph/index.ts";
 import { healthExactRoutes } from "./modules/health/index.ts";
 import {
@@ -70,7 +71,7 @@ async function handleApi(options: {
 }
 
 export function createHandler(options: StartServerOptions = {}) {
-	const cwd = options.cwd ?? process.cwd();
+	const cwd = options.cwd ?? resolveRuneCwd();
 	const staticDir = options.staticDir;
 
 	return async function handler(req: Request): Promise<Response> {
@@ -97,7 +98,8 @@ export function createHandler(options: StartServerOptions = {}) {
 export function startServer(options: StartServerOptions = {}) {
 	const port = options.port ?? Number(process.env.PORT ?? 8787);
 	const hostname = options.hostname ?? process.env.HOST ?? "127.0.0.1";
-	const handler = createHandler(options);
+	const cwd = options.cwd ?? resolveRuneCwd();
+	const handler = createHandler({ ...options, cwd });
 
 	const server = Bun.serve({
 		port,
@@ -109,11 +111,14 @@ export function startServer(options: StartServerOptions = {}) {
 		server,
 		url: `http://${hostname}:${server.port}`,
 		port: server.port,
+		cwd,
+		dataRoot: runeDir(cwd),
 		stop: () => server.stop(true),
 	};
 }
 
 if (import.meta.main) {
-	const { url } = startServer();
+	const { url, dataRoot } = startServer();
 	console.log(`Rune API listening on ${url}`);
+	console.log(`Data root: ${dataRoot}`);
 }

@@ -11,8 +11,10 @@ export {
 	graphsRoot,
 	profileDir,
 	profilesRoot,
+	resolveRuneCwd,
 	runeDir,
 } from "./modules/paths/index.ts";
+
 export { default as profileExtension } from "./modules/profile/index.ts";
 export {
 	type CreateRuneSessionOptions,
