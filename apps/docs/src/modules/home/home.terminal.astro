@@ -5,12 +5,12 @@ const lines = [
 		kind: "ok",
 		text: 'profile "researcher" created — .rune/profiles/researcher',
 	},
-	{ kind: "cmd", text: "rune link create researcher writer" },
-	{ kind: "ok", text: 'link "researcher → writer" created' },
+	{ kind: "cmd", text: "rune graph check draft" },
+	{ kind: "ok", text: 'Graph "draft" OK — path: plan -> write' },
 	{ kind: "cmd", text: "rune serve" },
 	{
 		kind: "muted",
-		text: "engine listening on :8787 — 2 profiles, 1 link loaded",
+		text: "engine listening on :8787 — graphs under .rune/graphs",
 	},
 	{ kind: "cursor", text: "" },
 ] as const;

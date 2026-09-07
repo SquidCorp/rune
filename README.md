@@ -1,22 +1,22 @@
 # Rune
 
-Rune is a multi-profile agent runtime. You define specialized agents as **profiles** (system prompt, model, skills, tools), **link** them into workflows, and run them through a single engine.
+Rune is a multi-profile agent runtime. You define specialized agents as **profiles** (system prompt, model, skills, tools), wire them into **graphs** (linear prompt chains), and run them through a single engine.
 
 Configure everything from the **CLI** or the **web UI**. The web app is also where you will follow agentic flows live on a canvas. Product docs ship as an Astro site in the same monorepo.
 
 Under the hood, Rune is built on the [pi](https://github.com/earendil-works/pi-coding-agent) coding-agent SDK, with a first-party profile system and an HTTP control plane so CLI and UI share one API.
 
-**In short:** create profiles → link agents → run and observe the flow — all configurable, all local under `.rune/`.
+**In short:** create profiles → define graph edges → run and observe the flow — all configurable, all local under `.rune/`.
 
 ## Packages
 
 | Path | Name | Role |
 |---|---|---|
-| `packages/engine` | `@rune/engine` | Domain: sessions, profile extension |
+| `packages/engine` | `@rune/engine` | Domain: sessions, profile extension, graph run |
 | `packages/api` | `@rune/api` | HTTP gateway (embeds engine paths/store) |
 | `packages/sdk` | `@rune/sdk` | Shared types + HTTP client |
 | `packages/tokens` | `@rune/tokens` | Design tokens (colors, type, space, radius) |
-| `packages/cli` | `@rune/cli` | `rune` binary (`serve`, profile/link commands) |
+| `packages/cli` | `@rune/cli` | `rune` binary (`serve`, profile/graph commands) |
 | `apps/web` | `@rune/web` | React SPA — config UI (+ canvas later) |
 | `apps/docs` | `@rune/docs` | Astro documentation site |
 
@@ -30,10 +30,11 @@ All runtime data lives under **`.rune/`** (cwd-relative):
     profile.json
     SYSTEM.md
     skills/ prompts/ themes/ extensions/
-  graphs/<id>.toml
-  links.json
+  graphs/<id>.toml   # nodes + [[edges]] — sole workflow topology
   # plus pi agent session/resource files
 ```
+
+> **Note:** older installs may still have an orphaned `.rune/links.json`. Global profile↔profile links are gone; topology lives only in graph TOML `[[edges]]`. Delete `links.json` manually if present.
 
 ## Develop
 
@@ -60,7 +61,9 @@ bun run rune profile list
 bun run rune profile show researcher
 bun run rune profile set researcher --model anthropic/claude-sonnet-4-5
 bun run rune profile delete researcher
-bun run rune link create researcher writer
+bun run rune graph list
+bun run rune graph check draft
+bun run rune graph run draft --prompt "Write about runes"
 bun run rune health
 ```
 

@@ -2,7 +2,6 @@ import { RuneClient } from "@rune/sdk";
 
 import { runGraphCommand } from "./modules/graph/index.ts";
 import { runHealthCommand } from "./modules/health/index.ts";
-import { runLinkCommand } from "./modules/link/index.ts";
 import { runProfileCommand } from "./modules/profile/index.ts";
 import { runServeCommand } from "./modules/serve/index.ts";
 
@@ -16,8 +15,6 @@ Usage:
   rune profile create <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>]
   rune profile set <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>]
   rune profile delete <id> [--force]
-  rune link list
-  rune link create <from> <to> [--label <text>]
   rune graph list
   rune graph show <graph-id>
   rune graph check <graph-id>
@@ -60,10 +57,6 @@ export async function runCli(argv: string[]): Promise<void> {
 	}
 	if (cmd === "profile") {
 		await runProfileCommand({ client, sub, rest, printHelp });
-		return;
-	}
-	if (cmd === "link") {
-		await runLinkCommand({ client, sub, rest, printHelp });
 		return;
 	}
 	if (cmd === "graph") {

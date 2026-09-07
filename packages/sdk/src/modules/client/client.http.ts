@@ -5,7 +5,6 @@ import type {
 	GraphRunResult,
 } from "../graph/index.ts";
 import type { HealthResponse } from "../health/index.ts";
-import type { CreateLinkInput, Link } from "../link/index.ts";
 import type {
 	CreateProfileInput,
 	Profile,
@@ -82,17 +81,6 @@ export class RuneClient {
 		const query = options.force ? "?force=true" : "";
 		return this.request<void>(`/profiles/${encodeURIComponent(id)}${query}`, {
 			method: "DELETE",
-		});
-	}
-
-	listLinks(): Promise<Link[]> {
-		return this.request<Link[]>("/links");
-	}
-
-	createLink(input: CreateLinkInput): Promise<Link> {
-		return this.request<Link>("/links", {
-			method: "POST",
-			body: JSON.stringify(input),
 		});
 	}
 

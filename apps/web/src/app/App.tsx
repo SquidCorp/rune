@@ -1,16 +1,14 @@
-import { type Link, type Profile, RuneClient } from "@rune/sdk";
+import { type Profile, RuneClient } from "@rune/sdk";
 import { useCallback, useEffect, useState } from "react";
 
 import { CanvasPlaceholder } from "@/modules/canvas";
 import { HealthStatus } from "@/modules/health";
-import { LinkSection } from "@/modules/link";
 import { ProfileSection } from "@/modules/profile";
 
 const client = new RuneClient({ baseUrl: "/api" });
 
 export function App() {
 	const [profiles, setProfiles] = useState<Profile[]>([]);
-	const [links, setLinks] = useState<Link[]>([]);
 	const [status, setStatus] = useState<string>("Connecting…");
 	const [error, setError] = useState<string | null>(null);
 
@@ -18,12 +16,8 @@ export function App() {
 		try {
 			const health = await client.health();
 			setStatus(`${health.service} v${health.version}`);
-			const [nextProfiles, nextLinks] = await Promise.all([
-				client.listProfiles(),
-				client.listLinks(),
-			]);
+			const nextProfiles = await client.listProfiles();
 			setProfiles(nextProfiles);
-			setLinks(nextLinks);
 			setError(null);
 		} catch (err) {
 			setStatus("API offline");
@@ -51,12 +45,14 @@ export function App() {
 				onRefresh={refresh}
 			/>
 
-			<LinkSection
-				client={client}
-				links={links}
-				onError={setError}
-				onRefresh={refresh}
-			/>
+			<section className="panel">
+				<h2>Workflow topology</h2>
+				<p className="muted">
+					Profile→profile links moved into graph edges (
+					<code>.rune/graphs/*.toml</code> <code>[[edges]]</code>). Use{" "}
+					<code>rune graph</code> to list, check, and run chains.
+				</p>
+			</section>
 
 			<CanvasPlaceholder />
 		</main>

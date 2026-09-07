@@ -14,7 +14,7 @@ const toc = [
 	{ id: "global", label: "Global options" },
 	{ id: "serve", label: "serve" },
 	{ id: "profile", label: "profile" },
-	{ id: "link", label: "link" },
+	{ id: "graph", label: "graph" },
 	{ id: "health", label: "health" },
 	{ id: "help", label: "help" },
 ] as const;
@@ -55,29 +55,42 @@ const profileCommands = [
 		usage: "rune profile delete <id> [--force]",
 		summary: "Delete a profile by id.",
 		details:
-			"Pass --force when the API requires an explicit destructive confirm.",
+			"Refuses when a graph node still references the profile unless --force is passed.",
 	},
 ] as const;
 
-const linkCommands = [
+const graphCommands = [
 	{
-		id: "link-list",
-		usage: "rune link list",
-		summary: "List directed profile links.",
-		details:
-			"Each line is from -> to with an optional (label). Empty store prints “No links yet.”",
+		id: "graph-list",
+		usage: "rune graph list",
+		summary: "List graphs under .rune/graphs/.",
+		details: "Prints id and optional name. Empty store prints “No graphs yet.”",
 	},
 	{
-		id: "link-create",
-		usage: "rune link create <from> <to> [--label <text>]",
-		summary: "Create a directed link between two profile ids.",
-		details: "Both <from> and <to> are required positional args.",
+		id: "graph-show",
+		usage: "rune graph show <graph-id>",
+		summary: "Show one graph’s nodes, edges, and path on disk.",
+		details: "Edges are node-id topology inside the graph TOML file.",
+	},
+	{
+		id: "graph-check",
+		usage: "rune graph check <graph-id>",
+		summary: "Validate linear topology and referenced profiles.",
+		details: "On success prints the ordered source→sink path.",
+	},
+	{
+		id: "graph-run",
+		usage:
+			"rune graph run <graph-id> --prompt <string> | --prompt-file <path> [--log <path>] [--verbose]",
+		summary: "Run a validated linear graph and print the sink output.",
+		details:
+			"Exactly one of --prompt or --prompt-file is required. --log writes the full JSON run record; --verbose prints per-node progress on stderr.",
 	},
 ] as const;
 
 const overviewSample = `rune serve [--port <n>] [--host <addr>]
 rune profile list | show | create | set | delete
-rune link list | create
+rune graph list | show | check | run
 rune health
 rune help`;
 
@@ -107,11 +120,15 @@ dir	.rune/profiles/researcher
 ❯ bun run rune profile delete researcher --force
 Deleted profile researcher`;
 
-const linkSample = `❯ bun run rune link create researcher writer --label "draft pipeline"
-Linked researcher -> writer
+const graphSample = `❯ bun run rune graph list
+draft\tDraft pipeline
 
-❯ bun run rune link list
-researcher -> writer (draft pipeline)`;
+❯ bun run rune graph check draft
+Graph "draft" OK
+path: plan -> write
+
+❯ bun run rune graph run draft --prompt "Write about runes"
+…sink assistant text…`;
 
 const healthSample = `rune health
 rune --url http://127.0.0.1:8787 health`;
@@ -167,7 +184,7 @@ const dataRoot = "<cwd>/.rune";
 			<section id="global" class="cli-ref__section">
 				<h2>Global options</h2>
 				<p>
-					Client commands (<code>profile</code>, <code>link</code>, <code>health</code>) resolve
+					Client commands (<code>profile</code>, <code>graph</code>, <code>health</code>) resolve
 					the API base URL in this order:
 				</p>
 				<ol>
@@ -273,12 +290,15 @@ const dataRoot = "<cwd>/.rune";
 				<pre class="cli-ref__pre" tabindex="0"><code>{profileSample}</code></pre>
 			</section>
 
-			<section id="link" class="cli-ref__section">
-				<h2><code>rune link</code></h2>
-				<p>Wire profiles into a directed flow. Requires a running engine.</p>
+			<section id="graph" class="cli-ref__section">
+				<h2><code>rune graph</code></h2>
+				<p>
+					Linear prompt-chain graphs under <code>.rune/graphs/</code>. Edges live only as{" "}
+					<code>[[edges]]</code> in graph TOML (node ids). Requires a running engine.
+				</p>
 
 				{
-					linkCommands.map((cmd) => (
+					graphCommands.map((cmd) => (
 						<div class="cli-ref__cmd" id={cmd.id}>
 							<h3>
 								<code>{cmd.usage}</code>
@@ -289,7 +309,7 @@ const dataRoot = "<cwd>/.rune";
 					))
 				}
 
-				<pre class="cli-ref__pre" tabindex="0"><code>{linkSample}</code></pre>
+				<pre class="cli-ref__pre" tabindex="0"><code>{graphSample}</code></pre>
 			</section>
 
 			<section id="health" class="cli-ref__section">

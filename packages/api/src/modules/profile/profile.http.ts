@@ -1,5 +1,7 @@
 import type { CreateProfileInput, UpdateProfileInput } from "@rune/sdk";
 
+import { listGraphs } from "../graph/index.ts";
+
 import {
 	createProfile,
 	deleteProfile,
@@ -30,7 +32,9 @@ function storeError(err: unknown, fallback: string): Response {
 	const message = err instanceof Error ? err.message : fallback;
 	if (message.includes("not found")) return error(message, 404);
 	if (message.includes("already exists")) return error(message, 409);
-	if (message.includes("is linked")) return error(message, 409);
+	if (message.includes("is used by graph") || message.includes("is linked")) {
+		return error(message, 409);
+	}
 	return error(message);
 }
 
@@ -75,9 +79,28 @@ async function handleUpdateProfile(
 	}
 }
 
+function graphsReferencingProfile(profileId: string, cwd: string): string[] {
+	const refs: string[] = [];
+	for (const graph of listGraphs(cwd)) {
+		if (graph.nodes.some((node) => node.profile === profileId)) {
+			refs.push(graph.id);
+		}
+	}
+	return refs;
+}
+
 function handleDeleteProfile(req: Request, id: string, cwd: string): Response {
 	try {
 		const force = new URL(req.url).searchParams.get("force") === "true";
+		if (!force) {
+			const graphRefs = graphsReferencingProfile(id, cwd);
+			if (graphRefs.length > 0) {
+				return error(
+					`Profile "${id}" is used by graph(s): ${graphRefs.join(", ")}; pass force to delete`,
+					409,
+				);
+			}
+		}
 		deleteProfile(id, { force }, cwd);
 		return json(undefined, 204);
 	} catch (err) {

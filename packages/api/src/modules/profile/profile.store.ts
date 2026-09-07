@@ -19,8 +19,6 @@ import type {
 } from "@rune/sdk";
 import { THINKING_LEVELS } from "@rune/sdk";
 
-import { listLinks, replaceLinks } from "../link/index.ts";
-
 const RUNIC_LETTERS = [
 	...Array.from({ length: 0x16ea - 0x16a0 + 1 }, (_, i) =>
 		String.fromCodePoint(0x16a0 + i),
@@ -210,7 +208,7 @@ export function updateProfile(
 
 export function deleteProfile(
 	id: string,
-	options: { force?: boolean } = {},
+	_options: { force?: boolean } = {},
 	cwd: string = process.cwd(),
 ): void {
 	if (!isSafeProfileId(id)) {
@@ -218,16 +216,5 @@ export function deleteProfile(
 	}
 
 	const profile = requireProfile(id, cwd);
-	const links = listLinks(cwd);
-	const remaining = links.filter((link) => link.from !== id && link.to !== id);
-
-	if (remaining.length !== links.length && !options.force) {
-		throw new Error(`Profile "${id}" is linked; pass force to delete`);
-	}
-
-	if (remaining.length !== links.length) {
-		replaceLinks(remaining, cwd);
-	}
-
 	rmSync(profile.paths.dir, { recursive: true, force: true });
 }

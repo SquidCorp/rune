@@ -10,7 +10,7 @@ export {
 	runGraph,
 	validateGraph,
 } from "./modules/graph/index.ts";
-export { createLink, listLinks } from "./modules/link/index.ts";
+
 export {
 	createProfile,
 	deleteProfile,

@@ -1,6 +1,5 @@
 import { graphExactRoutes, handleGraphApi } from "./modules/graph/index.ts";
 import { healthExactRoutes } from "./modules/health/index.ts";
-import { linkExactRoutes } from "./modules/link/index.ts";
 import {
 	handleProfileApi,
 	profileExactRoutes,
@@ -51,7 +50,6 @@ async function handleStatic(
 const exactRoutes: Record<string, RouteHandler> = {
 	...healthExactRoutes,
 	...profileExactRoutes,
-	...linkExactRoutes,
 	...graphExactRoutes,
 };
 

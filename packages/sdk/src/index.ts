@@ -10,7 +10,7 @@ export type {
 	GraphValidationIssue,
 } from "./modules/graph/index.ts";
 export type { HealthResponse } from "./modules/health/index.ts";
-export type { CreateLinkInput, Link } from "./modules/link/index.ts";
+
 export type {
 	CreateProfileInput,
 	Profile,
