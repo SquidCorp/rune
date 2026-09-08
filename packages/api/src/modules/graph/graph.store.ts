@@ -190,9 +190,13 @@ export function checkGraph(
  */
 export async function runGraph(
 	id: string,
-	prompt: string,
-	cwd: string = process.cwd(),
+	options: {
+		prompt: string;
+		cwd?: string;
+		verbose?: boolean;
+	},
 ): Promise<GraphRunResult> {
+	const cwd = options.cwd ?? process.cwd();
 	const graph = getGraph(id, cwd);
 	if (!graph) {
 		throw new Error(`Graph "${id}" not found`);
@@ -218,7 +222,8 @@ export async function runGraph(
 	return engineRunGraph({
 		graphId: id,
 		nodes: ordered,
-		prompt,
+		prompt: options.prompt,
 		cwd,
+		verbose: options.verbose === true,
 	});
 }

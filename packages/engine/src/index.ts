@@ -1,10 +1,13 @@
 export {
 	buildNodeUserMessage,
 	type GraphNodeRunner,
+	type GraphNodeRunResult,
 	getFinalAssistantText,
 	type RunGraphOptions,
 	runGraph,
 	runGraphNodeWithSession,
+	sessionEventToDiag,
+	truncateDiagText,
 } from "./modules/graph/index.ts";
 export {
 	graphPath,

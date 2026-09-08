@@ -89,10 +89,17 @@ async function handleRunGraph(
 	if (typeof body.prompt !== "string") {
 		return error("prompt is required and must be a string");
 	}
+	if (body.verbose !== undefined && typeof body.verbose !== "boolean") {
+		return error("verbose must be a boolean when provided");
+	}
 
 	try {
 		// Synchronous HTTP for v1 — long-running model chain; no job queue.
-		const result = await runGraph(id, body.prompt, cwd);
+		const result = await runGraph(id, {
+			prompt: body.prompt,
+			cwd,
+			verbose: body.verbose === true,
+		});
 		return json(result);
 	} catch (err) {
 		const check =

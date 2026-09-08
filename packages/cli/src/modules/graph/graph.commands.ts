@@ -3,6 +3,7 @@ import type {
 	Graph,
 	GraphCheckResult,
 	GraphRunResult,
+	GraphSessionDiagEvent,
 	RuneClient,
 } from "@rune/sdk";
 
@@ -125,9 +126,26 @@ function writeRunLog(path: string, result: GraphRunResult): void {
 	}
 }
 
+function printVerboseEvent(nodeId: string, event: GraphSessionDiagEvent): void {
+	if (event.type === "user") {
+		console.error(`[graph] ${nodeId} user: ${event.text}`);
+		return;
+	}
+	if (event.type === "assistant") {
+		console.error(`[graph] ${nodeId} assistant: ${event.text}`);
+		return;
+	}
+	console.error(
+		`[graph] ${nodeId} tool ${event.name} ${event.ok ? "ok" : "error"}`,
+	);
+}
+
 function printVerboseStep(result: GraphRunResult): void {
 	for (const step of result.steps) {
 		console.error(`[graph] ${step.nodeId} (${step.profile}) start`);
+		for (const event of step.events ?? []) {
+			printVerboseEvent(step.nodeId, event);
+		}
 		if (step.status === "ok") {
 			console.error(
 				`[graph] ${step.nodeId} ok (${step.output?.length ?? 0} chars)`,
@@ -160,7 +178,10 @@ async function cmdGraphRun(client: RuneClient, rest: string[]): Promise<void> {
 	const verbose = hasFlag(rest, "--verbose");
 
 	if (verbose) console.error(`[graph] run ${id}`);
-	const result = await client.runGraph(id, { prompt });
+	const result = await client.runGraph(id, {
+		prompt,
+		...(verbose ? { verbose: true } : {}),
+	});
 	if (verbose) printVerboseStep(result);
 	emitGraphRunResult(id, result, logPath);
 }

@@ -39,7 +39,18 @@ export interface GraphCheckResult {
 
 export interface GraphRunRequest {
 	prompt: string;
+	/** When true, engine buffers sparse session diagnostics onto each step. */
+	verbose?: boolean;
 }
+
+/**
+ * Sparse session diagnostics for `--verbose` proof (not full transcript / thinking).
+ * Text fields are truncated by the engine.
+ */
+export type GraphSessionDiagEvent =
+	| { type: "user"; text: string }
+	| { type: "assistant"; text: string }
+	| { type: "tool"; name: string; ok: boolean };
 
 export interface GraphRunStep {
 	nodeId: string;
@@ -51,6 +62,8 @@ export interface GraphRunStep {
 	error?: string;
 	startedAt: string;
 	finishedAt: string;
+	/** Present when the run requested verbose diagnostics. */
+	events?: GraphSessionDiagEvent[];
 }
 
 export interface GraphRunResult {

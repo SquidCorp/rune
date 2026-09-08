@@ -6,5 +6,6 @@ export type {
 	GraphRunRequest,
 	GraphRunResult,
 	GraphRunStep,
+	GraphSessionDiagEvent,
 	GraphValidationIssue,
 } from "./graph.types.ts";

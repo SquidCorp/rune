@@ -7,6 +7,7 @@ export type {
 	GraphRunRequest,
 	GraphRunResult,
 	GraphRunStep,
+	GraphSessionDiagEvent,
 	GraphValidationIssue,
 } from "./modules/graph/index.ts";
 export type { HealthResponse } from "./modules/health/index.ts";

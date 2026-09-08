@@ -85,3 +85,31 @@ to = "b"
 		expect(res.status).toBe(404);
 	});
 });
+
+describe("POST /graphs/:id/run verbose body", () => {
+	test("returns 400 when verbose is not boolean", async () => {
+		const cwd = tempCwd();
+		writeProfile(cwd, "planner");
+		writeGraph(
+			cwd,
+			"ok",
+			`
+[[nodes]]
+id = "a"
+profile = "planner"
+`,
+		);
+
+		const handler = createHandler({ cwd });
+		const res = await handler(
+			new Request("http://127.0.0.1/graphs/ok/run", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ prompt: "hi", verbose: "yes" }),
+			}),
+		);
+		expect(res.status).toBe(400);
+		const body = (await res.json()) as { error: string };
+		expect(body.error).toContain("verbose");
+	});
+});

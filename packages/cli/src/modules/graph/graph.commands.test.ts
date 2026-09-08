@@ -66,6 +66,20 @@ async function withCapturedStdout(fn: () => Promise<void>): Promise<string> {
 	}
 }
 
+async function withCapturedStderr(fn: () => Promise<void>): Promise<string> {
+	const originalError = console.error;
+	const lines: string[] = [];
+	console.error = (...args: unknown[]) => {
+		lines.push(args.map(String).join(" "));
+	};
+	try {
+		await fn();
+		return lines.join("\n");
+	} finally {
+		console.error = originalError;
+	}
+}
+
 describe("rune graph run flags", () => {
 	test("requires prompt or prompt-file", async () => {
 		await expect(
@@ -112,6 +126,77 @@ describe("rune graph run flags", () => {
 		});
 
 		expect(seenPrompt).toBe("from-file");
+	});
+});
+
+describe("rune graph run verbose flag", () => {
+	test("passes verbose true on --verbose", async () => {
+		let seenVerbose: boolean | undefined;
+		await withCapturedStderr(async () => {
+			await withCapturedStdout(async () => {
+				await runGraphCommand({
+					client: promptClient(async (body) => {
+						seenVerbose = body.verbose;
+						return okResult("ok");
+					}),
+					sub: "run",
+					rest: ["draft", "--prompt", "seed", "--verbose"],
+					printHelp: () => {},
+				});
+			});
+		});
+		expect(seenVerbose).toBe(true);
+	});
+
+	test("omits verbose field without --verbose", async () => {
+		let seenBody: GraphRunRequest | undefined;
+		await withCapturedStdout(async () => {
+			await runGraphCommand({
+				client: promptClient(async (body) => {
+					seenBody = body;
+					return okResult("ok");
+				}),
+				sub: "run",
+				rest: ["draft", "--prompt", "seed"],
+				printHelp: () => {},
+			});
+		});
+		expect(seenBody).toEqual({ prompt: "seed" });
+	});
+
+	test("prints session events on stderr", async () => {
+		const result = okResult("FINAL");
+		result.steps[0] = {
+			nodeId: "a",
+			profile: "p",
+			input: "seed",
+			output: "mid",
+			status: "ok",
+			startedAt: "t0",
+			finishedAt: "t0",
+			events: [
+				{ type: "user", text: "seed" },
+				{ type: "tool", name: "read", ok: true },
+				{ type: "assistant", text: "mid" },
+			],
+		};
+
+		const stderr = await withCapturedStderr(async () => {
+			await withCapturedStdout(async () => {
+				await runGraphCommand({
+					client: mockClient(async () => result),
+					sub: "run",
+					rest: ["draft", "--prompt", "seed", "--verbose"],
+					printHelp: () => {},
+				});
+			});
+		});
+
+		expect(stderr).toContain("[graph] run draft");
+		expect(stderr).toContain("[graph] a user: seed");
+		expect(stderr).toContain("[graph] a tool read ok");
+		expect(stderr).toContain("[graph] a assistant: mid");
+		expect(stderr).toContain("[graph] a ok (3 chars)");
 	});
 });
 
