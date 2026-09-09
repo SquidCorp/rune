@@ -9,11 +9,12 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
-import { profileDir, profilesRoot } from "@rune/engine";
+import { profileDirForScope, profilesRootForScope } from "@rune/engine";
 import type {
 	CreateProfileInput,
 	Profile,
 	ProfileMeta,
+	RuneScope,
 	ThinkingLevel,
 	UpdateProfileInput,
 } from "@rune/sdk";
@@ -69,9 +70,13 @@ function optionalSubdir(dir: string, name: string): string | undefined {
 	return undefined;
 }
 
-function loadProfile(id: string, cwd: string): Profile | undefined {
+function loadProfile(
+	id: string,
+	cwd: string,
+	scope: RuneScope,
+): Profile | undefined {
 	if (!isSafeProfileId(id)) return undefined;
-	const dir = profileDir(id, cwd);
+	const dir = profileDirForScope(id, scope, cwd);
 	if (!existsSync(dir) || !statSync(dir).isDirectory()) return undefined;
 
 	const meta = readJson<ProfileMeta>(join(dir, "profile.json"), {});
@@ -107,9 +112,9 @@ function requireNonEmpty(value: string, field: string): string {
 	return trimmed;
 }
 
-function assignGlyph(cwd: string): string {
+function assignGlyph(cwd: string, scope: RuneScope): string {
 	const used = new Set(
-		listProfiles(cwd)
+		listProfiles(cwd, scope)
 			.map((profile) => profile.meta.glyph)
 			.filter((glyph): glyph is string => Boolean(glyph)),
 	);
@@ -126,21 +131,24 @@ function writeSystemPrompt(dir: string, prompt: string): void {
 	);
 }
 
-function requireProfile(id: string, cwd: string): Profile {
-	const profile = getProfile(id, cwd);
+function requireProfile(id: string, cwd: string, scope: RuneScope): Profile {
+	const profile = getProfile(id, cwd, scope);
 	if (!profile) {
 		throw new Error(`Profile "${id}" not found`);
 	}
 	return profile;
 }
 
-export function listProfiles(cwd: string = process.cwd()): Profile[] {
-	const root = profilesRoot(cwd);
+export function listProfiles(
+	cwd: string = process.cwd(),
+	scope: RuneScope = "user",
+): Profile[] {
+	const root = profilesRootForScope(scope, cwd);
 	if (!existsSync(root)) return [];
 
 	return readdirSync(root, { withFileTypes: true })
 		.filter((entry) => entry.isDirectory() && isSafeProfileId(entry.name))
-		.map((entry) => loadProfile(entry.name, cwd))
+		.map((entry) => loadProfile(entry.name, cwd, scope))
 		.filter((profile): profile is Profile => profile !== undefined)
 		.sort((a, b) => a.id.localeCompare(b.id));
 }
@@ -148,24 +156,26 @@ export function listProfiles(cwd: string = process.cwd()): Profile[] {
 export function getProfile(
 	id: string,
 	cwd: string = process.cwd(),
+	scope: RuneScope = "user",
 ): Profile | undefined {
-	return loadProfile(id, cwd);
+	return loadProfile(id, cwd, scope);
 }
 
 export function createProfile(
 	input: CreateProfileInput,
 	cwd: string = process.cwd(),
+	scope: RuneScope = "user",
 ): Profile {
 	if (!isSafeProfileId(input.id)) {
 		throw new Error(`Invalid profile id "${input.id}"`);
 	}
 
-	if (getProfile(input.id, cwd)) {
+	if (getProfile(input.id, cwd, scope)) {
 		throw new Error(`Profile "${input.id}" already exists`);
 	}
 
-	const dir = profileDir(input.id, cwd);
-	const meta: ProfileMeta = { glyph: assignGlyph(cwd) };
+	const dir = profileDirForScope(input.id, scope, cwd);
+	const meta: ProfileMeta = { glyph: assignGlyph(cwd, scope) };
 	if (input.name?.trim()) meta.name = input.name.trim();
 	if (input.model?.trim()) meta.model = input.model.trim();
 	if (input.thinkingLevel) {
@@ -179,15 +189,17 @@ export function createProfile(
 		writeSystemPrompt(dir, input.systemPrompt);
 	}
 
-	return requireProfile(input.id, cwd);
+	return requireProfile(input.id, cwd, scope);
 }
 
 export function updateProfile(
 	id: string,
 	input: UpdateProfileInput,
-	cwd: string = process.cwd(),
+	options: { cwd?: string; scope?: RuneScope } = {},
 ): Profile {
-	const profile = requireProfile(id, cwd);
+	const cwd = options.cwd ?? process.cwd();
+	const scope = options.scope ?? "user";
+	const profile = requireProfile(id, cwd, scope);
 	const meta: ProfileMeta = { ...profile.meta };
 
 	if (input.name !== undefined) meta.name = requireNonEmpty(input.name, "name");
@@ -203,18 +215,19 @@ export function updateProfile(
 		writeSystemPrompt(profile.paths.dir, input.systemPrompt);
 	}
 
-	return requireProfile(id, cwd);
+	return requireProfile(id, cwd, scope);
 }
 
 export function deleteProfile(
 	id: string,
-	_options: { force?: boolean } = {},
-	cwd: string = process.cwd(),
+	options: { force?: boolean; cwd?: string; scope?: RuneScope } = {},
 ): void {
 	if (!isSafeProfileId(id)) {
 		throw new Error(`Invalid profile id "${id}"`);
 	}
 
-	const profile = requireProfile(id, cwd);
+	const cwd = options.cwd ?? process.cwd();
+	const scope = options.scope ?? "user";
+	const profile = requireProfile(id, cwd, scope);
 	rmSync(profile.paths.dir, { recursive: true, force: true });
 }

@@ -10,11 +10,11 @@ function printHelp(): void {
 
 Usage:
   rune serve [--port <n>] [--host <addr>]
-  rune profile list
-  rune profile show <id>
-  rune profile create <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>]
-  rune profile set <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>]
-  rune profile delete <id> [--force]
+  rune profile list [--scope user|project]
+  rune profile show <id> [--scope user|project]
+  rune profile create <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>] [--scope user|project]
+  rune profile set <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>] [--scope user|project]
+  rune profile delete <id> [--force] [--scope user|project]
   rune graph list
   rune graph show <graph-id>
   rune graph check <graph-id>

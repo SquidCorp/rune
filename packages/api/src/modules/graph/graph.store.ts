@@ -179,7 +179,8 @@ export function checkGraph(
 		throw new Error(`Graph "${id}" not found`);
 	}
 	return validateGraph(graph, {
-		profileExists: (profileId) => getProfile(profileId, cwd) !== undefined,
+		profileExists: (profileId) =>
+			getProfile(profileId, cwd, "project") !== undefined,
 	});
 }
 
@@ -202,7 +203,8 @@ export async function runGraph(
 		throw new Error(`Graph "${id}" not found`);
 	}
 	const check = validateGraph(graph, {
-		profileExists: (profileId) => getProfile(profileId, cwd) !== undefined,
+		profileExists: (profileId) =>
+			getProfile(profileId, cwd, "project") !== undefined,
 	});
 	if (!check.ok || !check.path) {
 		const err = new Error(`Graph "${id}" invalid`) as Error & {

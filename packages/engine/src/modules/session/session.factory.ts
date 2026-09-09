@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import {
 	type CreateAgentSessionResult,
 	createAgentSession,
@@ -7,7 +8,7 @@ import {
 	SessionManager,
 } from "@earendil-works/pi-coding-agent";
 
-import { runeDir } from "../paths/index.ts";
+import { userRuneDir } from "../paths/index.ts";
 import profileExtensionFactory from "../profile/index.ts";
 
 const profileExtension: InlineExtension = {
@@ -43,19 +44,20 @@ function activateProfile(profile: string | undefined): void {
 
 /**
  * Creates a fully configured Rune runtime session with pi-profile loaded.
- * Agent dir and profiles both resolve under `./.rune`.
+ * Agent dir is user-scoped `userRuneDir()`; profiles still resolve under
+ * project `runeDir(cwd)`.
  */
 export async function createRuneSession(
 	options?: CreateRuneSessionOptions,
 ): Promise<CreateAgentSessionResult> {
 	const cwd = options?.cwd ?? process.cwd();
-	const localAgentDir = runeDir(cwd);
+	const agentDir = userRuneDir();
 
 	activateProfile(options?.profile);
 
 	const loader = new DefaultResourceLoader({
 		cwd,
-		agentDir: localAgentDir,
+		agentDir,
 		extensionFactories: [profileExtension],
 	});
 
@@ -68,15 +70,20 @@ export async function createRuneSession(
 		extensions.runtime.flagValues.set("profile", profileId);
 	}
 
-	const modelRuntime = await ModelRuntime.create();
-	const sessionManager =
-		options?.inMemory !== false
-			? SessionManager.inMemory()
-			: SessionManager.create(cwd);
-
-	return createAgentSession({
-		resourceLoader: loader,
-		sessionManager,
-		modelRuntime,
+	const modelRuntime = await ModelRuntime.create({
+		authPath: join(agentDir, "auth.json"),
+		modelsPath: join(agentDir, "models.json"),
 	});
+
+	const sessionOptions = {
+		cwd,
+		agentDir,
+		resourceLoader: loader,
+		modelRuntime,
+		...(options?.inMemory !== false
+			? { sessionManager: SessionManager.inMemory() }
+			: {}),
+	};
+
+	return createAgentSession(sessionOptions);
 }

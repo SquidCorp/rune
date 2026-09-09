@@ -17,6 +17,10 @@
 		"build": "bun run --filter '@rune/*' build",
 		"start": "bun run --filter @rune/cli start",
 		"rune": "bun run packages/cli/src/bin.ts",
+		"test:profile:omitted": "bun run scripts/profile-scope-omitted.ts",
+		"test:profile:user": "bun run scripts/profile-scope-user.ts",
+		"test:profile:project": "bun run scripts/profile-scope-project.ts",
+		"test:profile:scopes": "bun run scripts/profile-scope-omitted.ts && bun run scripts/profile-scope-user.ts && bun run scripts/profile-scope-project.ts",
 		"check": "biome check .",
 		"check:fix": "biome check --write .",
 		"format": "biome format --write ."

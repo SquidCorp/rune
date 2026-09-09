@@ -16,7 +16,12 @@ export type {
 	CreateProfileInput,
 	Profile,
 	ProfileMeta,
+	RuneScope,
 	ThinkingLevel,
 	UpdateProfileInput,
 } from "./modules/profile/index.ts";
-export { THINKING_LEVELS } from "./modules/profile/index.ts";
+export {
+	parseRuneScope,
+	RUNE_SCOPES,
+	THINKING_LEVELS,
+} from "./modules/profile/index.ts";

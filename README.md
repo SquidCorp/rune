@@ -22,17 +22,33 @@ Under the hood, Rune is built on the [pi](https://github.com/earendil-works/pi-c
 
 ## Data root
 
-All runtime data lives under **`.rune/`** (cwd-relative):
+Rune keeps two roots:
 
 ```text
+# User-scoped (Pi agentDir) — $HOME/.rune or $RUNE_HOME — default / --scope user
+~/.rune/
+  auth.json
+  models.json
+  settings.json
+  skills/ prompts/ themes/ extensions/
+  sessions/<encoded-cwd>/
+  profiles/<id>/
+    profile.json
+    SYSTEM.md
+    skills/ prompts/ themes/ extensions/
+
+# Repo-scoped — <cwd>/.rune — --scope project
 .rune/
   profiles/<id>/
     profile.json
     SYSTEM.md
     skills/ prompts/ themes/ extensions/
-  graphs/<id>.toml   # nodes + [[edges]] — sole workflow topology
-  # plus pi agent session/resource files
+  graphs/<id>.toml
+  artifacts/
 ```
+
+`RUNE_HOME` overrides the user root. `RUNE_CWD` still forces the project cwd.
+Serve output `Data root:` remains `<cwd>/.rune`.
 
 > **Note:** older installs may still have an orphaned `.rune/links.json`. Global profile↔profile links are gone; topology lives only in graph TOML `[[edges]]`. Delete `links.json` manually if present.
 

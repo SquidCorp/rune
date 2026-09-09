@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import {
+	parseRuneScope,
 	type RuneClient,
+	type RuneScope,
 	THINKING_LEVELS,
 	type ThinkingLevel,
 } from "@rune/sdk";
@@ -13,6 +15,11 @@ function flagValue(args: string[], name: string): string | undefined {
 		throw new Error(`${name} requires a value`);
 	}
 	return value;
+}
+
+function parseScopeFlag(args: string[]): RuneScope {
+	if (!args.includes("--scope")) return "user";
+	return parseRuneScope(flagValue(args, "--scope"));
 }
 
 function parseThinkingLevelFlag(args: string[]): ThinkingLevel | undefined {
@@ -73,8 +80,12 @@ function requireProfileId(rest: string[], usage: string): string {
 	return id;
 }
 
-async function cmdProfileList(client: RuneClient): Promise<void> {
-	const profiles = await client.listProfiles();
+async function cmdProfileList(
+	client: RuneClient,
+	rest: string[],
+): Promise<void> {
+	const scope = parseScopeFlag(rest);
+	const profiles = await client.listProfiles({ scope });
 	if (profiles.length === 0) {
 		console.log("No profiles yet.");
 		return;
@@ -90,8 +101,12 @@ async function cmdProfileShow(
 	client: RuneClient,
 	rest: string[],
 ): Promise<void> {
-	const id = requireProfileId(rest, "Usage: rune profile show <id>");
-	const profile = await client.getProfile(id);
+	const id = requireProfileId(
+		rest,
+		"Usage: rune profile show <id> [--scope user|project]",
+	);
+	const scope = parseScopeFlag(rest);
+	const profile = await client.getProfile(id, { scope });
 	console.log(`${profile.meta.glyph ?? "-"}\t${profile.id}`);
 	console.log(`name\t${profile.displayName}`);
 	if (profile.meta.model) console.log(`model\t${profile.meta.model}`);
@@ -108,12 +123,16 @@ async function cmdProfileCreate(
 ): Promise<void> {
 	const id = requireProfileId(
 		rest,
-		"Usage: rune profile create <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>]",
+		"Usage: rune profile create <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>] [--scope user|project]",
 	);
-	const profile = await client.createProfile({
-		id,
-		...profileMutationFromArgs(rest),
-	});
+	const scope = parseScopeFlag(rest);
+	const profile = await client.createProfile(
+		{
+			id,
+			...profileMutationFromArgs(rest),
+		},
+		{ scope },
+	);
 	const glyph = profile.meta.glyph ? `${profile.meta.glyph} ` : "";
 	console.log(`Created profile ${glyph}${profile.id}`);
 }
@@ -123,8 +142,9 @@ async function cmdProfileSet(
 	rest: string[],
 ): Promise<void> {
 	const usage =
-		"Usage: rune profile set <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>]";
+		"Usage: rune profile set <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>] [--scope user|project]";
 	const id = requireProfileId(rest, usage);
+	const scope = parseScopeFlag(rest);
 	const input = profileMutationFromArgs(rest);
 	if (
 		input.name === undefined &&
@@ -134,7 +154,7 @@ async function cmdProfileSet(
 	) {
 		throw new Error(usage);
 	}
-	const profile = await client.updateProfile(id, input);
+	const profile = await client.updateProfile(id, input, { scope });
 	console.log(`Updated profile ${profile.id}`);
 }
 
@@ -144,9 +164,13 @@ async function cmdProfileDelete(
 ): Promise<void> {
 	const id = requireProfileId(
 		rest,
-		"Usage: rune profile delete <id> [--force]",
+		"Usage: rune profile delete <id> [--force] [--scope user|project]",
 	);
-	await client.deleteProfile(id, { force: rest.includes("--force") });
+	const scope = parseScopeFlag(rest);
+	await client.deleteProfile(id, {
+		force: rest.includes("--force"),
+		scope,
+	});
 	console.log(`Deleted profile ${id}`);
 }
 
@@ -159,7 +183,7 @@ export async function runProfileCommand(options: {
 	const { client, sub, rest, printHelp } = options;
 	switch (sub) {
 		case "list":
-			await cmdProfileList(client);
+			await cmdProfileList(client, rest);
 			return;
 		case "show":
 			await cmdProfileShow(client, rest);

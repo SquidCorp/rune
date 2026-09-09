@@ -8,6 +8,7 @@ import type { HealthResponse } from "../health/index.ts";
 import type {
 	CreateProfileInput,
 	Profile,
+	RuneScope,
 	UpdateProfileInput,
 } from "../profile/index.ts";
 
@@ -51,37 +52,78 @@ export class RuneClient {
 		return (await res.json()) as T;
 	}
 
+	private withQuery(
+		path: string,
+		params: Record<string, string | undefined>,
+	): string {
+		const q = new URLSearchParams();
+		for (const [key, value] of Object.entries(params)) {
+			if (value !== undefined) q.set(key, value);
+		}
+		const s = q.toString();
+		return s ? `${path}?${s}` : path;
+	}
+
 	health(): Promise<HealthResponse> {
 		return this.request<HealthResponse>("/health");
 	}
 
-	listProfiles(): Promise<Profile[]> {
-		return this.request<Profile[]>("/profiles");
+	listProfiles(options?: { scope?: RuneScope }): Promise<Profile[]> {
+		return this.request<Profile[]>(
+			this.withQuery("/profiles", { scope: options?.scope }),
+		);
 	}
 
-	getProfile(id: string): Promise<Profile> {
-		return this.request<Profile>(`/profiles/${encodeURIComponent(id)}`);
+	getProfile(id: string, options?: { scope?: RuneScope }): Promise<Profile> {
+		return this.request<Profile>(
+			this.withQuery(`/profiles/${encodeURIComponent(id)}`, {
+				scope: options?.scope,
+			}),
+		);
 	}
 
-	createProfile(input: CreateProfileInput): Promise<Profile> {
-		return this.request<Profile>("/profiles", {
-			method: "POST",
-			body: JSON.stringify(input),
-		});
+	createProfile(
+		input: CreateProfileInput,
+		options?: { scope?: RuneScope },
+	): Promise<Profile> {
+		return this.request<Profile>(
+			this.withQuery("/profiles", { scope: options?.scope }),
+			{
+				method: "POST",
+				body: JSON.stringify(input),
+			},
+		);
 	}
 
-	updateProfile(id: string, input: UpdateProfileInput): Promise<Profile> {
-		return this.request<Profile>(`/profiles/${encodeURIComponent(id)}`, {
-			method: "PATCH",
-			body: JSON.stringify(input),
-		});
+	updateProfile(
+		id: string,
+		input: UpdateProfileInput,
+		options?: { scope?: RuneScope },
+	): Promise<Profile> {
+		return this.request<Profile>(
+			this.withQuery(`/profiles/${encodeURIComponent(id)}`, {
+				scope: options?.scope,
+			}),
+			{
+				method: "PATCH",
+				body: JSON.stringify(input),
+			},
+		);
 	}
 
-	deleteProfile(id: string, options: { force?: boolean } = {}): Promise<void> {
-		const query = options.force ? "?force=true" : "";
-		return this.request<void>(`/profiles/${encodeURIComponent(id)}${query}`, {
-			method: "DELETE",
-		});
+	deleteProfile(
+		id: string,
+		options: { force?: boolean; scope?: RuneScope } = {},
+	): Promise<void> {
+		return this.request<void>(
+			this.withQuery(`/profiles/${encodeURIComponent(id)}`, {
+				force: options.force ? "true" : undefined,
+				scope: options.scope,
+			}),
+			{
+				method: "DELETE",
+			},
+		);
 	}
 
 	listGraphs(): Promise<Graph[]> {

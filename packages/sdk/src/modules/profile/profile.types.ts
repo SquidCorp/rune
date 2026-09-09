@@ -10,6 +10,20 @@ export const THINKING_LEVELS = [
 
 export type ThinkingLevel = (typeof THINKING_LEVELS)[number];
 
+export const RUNE_SCOPES = ["user", "project"] as const;
+
+export type RuneScope = (typeof RUNE_SCOPES)[number];
+
+export function parseRuneScope(value: string | undefined | null): RuneScope {
+	if (value === undefined || value === null || value === "") {
+		return "user";
+	}
+	if (value === "user" || value === "project") {
+		return value;
+	}
+	throw new Error(`Invalid scope "${value}". Use: user, project`);
+}
+
 export interface ProfileMeta {
 	name?: string;
 	model?: string;

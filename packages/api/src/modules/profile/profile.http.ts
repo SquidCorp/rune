@@ -1,4 +1,9 @@
-import type { CreateProfileInput, UpdateProfileInput } from "@rune/sdk";
+import {
+	type CreateProfileInput,
+	parseRuneScope,
+	type RuneScope,
+	type UpdateProfileInput,
+} from "@rune/sdk";
 
 import { listGraphs } from "../graph/index.ts";
 
@@ -42,13 +47,17 @@ async function readBody<T>(req: Request): Promise<T> {
 	return (await req.json()) as T;
 }
 
+function requestScope(req: Request): RuneScope {
+	return parseRuneScope(new URL(req.url).searchParams.get("scope"));
+}
+
 async function handleCreateProfile(
 	req: Request,
 	cwd: string,
 ): Promise<Response> {
 	try {
 		const input = await readBody<CreateProfileInput>(req);
-		return json(createProfile(input, cwd), 201);
+		return json(createProfile(input, cwd, requestScope(req)), 201);
 	} catch (err) {
 		return storeError(err, "Failed to create profile");
 	}
@@ -60,10 +69,14 @@ export function matchProfileId(pathname: string): string | undefined {
 	return decodeURIComponent(profileMatch[1] ?? "");
 }
 
-function handleGetProfile(id: string, cwd: string): Response {
-	const profile = getProfile(id, cwd);
-	if (!profile) return error(`Profile "${id}" not found`, 404);
-	return json(profile);
+function handleGetProfile(req: Request, id: string, cwd: string): Response {
+	try {
+		const profile = getProfile(id, cwd, requestScope(req));
+		if (!profile) return error(`Profile "${id}" not found`, 404);
+		return json(profile);
+	} catch (err) {
+		return storeError(err, "Failed to get profile");
+	}
 }
 
 async function handleUpdateProfile(
@@ -73,7 +86,7 @@ async function handleUpdateProfile(
 ): Promise<Response> {
 	try {
 		const input = await readBody<UpdateProfileInput>(req);
-		return json(updateProfile(id, input, cwd));
+		return json(updateProfile(id, input, { cwd, scope: requestScope(req) }));
 	} catch (err) {
 		return storeError(err, "Failed to update profile");
 	}
@@ -91,8 +104,9 @@ function graphsReferencingProfile(profileId: string, cwd: string): string[] {
 
 function handleDeleteProfile(req: Request, id: string, cwd: string): Response {
 	try {
+		const scope = requestScope(req);
 		const force = new URL(req.url).searchParams.get("force") === "true";
-		if (!force) {
+		if (!force && scope === "project") {
 			const graphRefs = graphsReferencingProfile(id, cwd);
 			if (graphRefs.length > 0) {
 				return error(
@@ -101,7 +115,7 @@ function handleDeleteProfile(req: Request, id: string, cwd: string): Response {
 				);
 			}
 		}
-		deleteProfile(id, { force }, cwd);
+		deleteProfile(id, { force, cwd, scope });
 		return json(undefined, 204);
 	} catch (err) {
 		return storeError(err, "Failed to delete profile");
@@ -109,7 +123,13 @@ function handleDeleteProfile(req: Request, id: string, cwd: string): Response {
 }
 
 export const profileExactRoutes: Record<string, RouteHandler> = {
-	"GET /profiles": (_req, cwd) => json(listProfiles(cwd)),
+	"GET /profiles": (req, cwd) => {
+		try {
+			return json(listProfiles(cwd, requestScope(req)));
+		} catch (err) {
+			return storeError(err, "Failed to list profiles");
+		}
+	},
 	"POST /profiles": (req, cwd) => handleCreateProfile(req, cwd),
 };
 
@@ -122,7 +142,7 @@ export async function handleProfileApi(options: {
 	const { req, method, pathname, cwd } = options;
 	const id = matchProfileId(pathname);
 	if (id === undefined) return undefined;
-	if (method === "GET") return handleGetProfile(id, cwd);
+	if (method === "GET") return handleGetProfile(req, id, cwd);
 	if (method === "PATCH") return handleUpdateProfile(req, id, cwd);
 	if (method === "DELETE") return handleDeleteProfile(req, id, cwd);
 	return undefined;
