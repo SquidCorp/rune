@@ -10,6 +10,7 @@ export interface ShellHeaderProps {
 	healthOk: boolean;
 	healthLabel: string;
 	profileCount: number | null;
+	onCreate: () => void;
 }
 
 export function ShellHeader({
@@ -17,6 +18,7 @@ export function ShellHeader({
 	healthOk,
 	healthLabel,
 	profileCount,
+	onCreate,
 }: ShellHeaderProps) {
 	const countLabel = profileCount === null ? "—" : String(profileCount);
 	const pathLabel =
@@ -48,7 +50,7 @@ export function ShellHeader({
 				</div>
 				<div className="shell-page-actions">
 					<span className="shell-count">{pathLabel}</span>
-					<NewProfileButton />
+					<NewProfileButton onClick={onCreate} />
 				</div>
 			</header>
 		</>

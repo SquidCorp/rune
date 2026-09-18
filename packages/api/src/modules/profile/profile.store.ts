@@ -81,12 +81,22 @@ function loadProfile(
 
 	const meta = readJson<ProfileMeta>(join(dir, "profile.json"), {});
 	const systemPath = join(dir, "SYSTEM.md");
+	const hasSystemPrompt = existsSync(systemPath);
+	let systemPrompt: string | undefined;
+	if (hasSystemPrompt) {
+		try {
+			systemPrompt = readFileSync(systemPath, "utf-8").replace(/\n$/, "");
+		} catch {
+			systemPrompt = undefined;
+		}
+	}
 
 	return {
 		id,
 		displayName: meta.name?.trim() || id,
 		meta,
-		hasSystemPrompt: existsSync(systemPath),
+		hasSystemPrompt,
+		systemPrompt,
 		paths: {
 			dir,
 			skills: optionalSubdir(dir, "skills"),

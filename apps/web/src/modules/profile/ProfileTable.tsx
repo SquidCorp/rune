@@ -5,6 +5,46 @@ export interface ProfileTableProps {
 	usedBy: Record<string, string[]>;
 	selectedId: string | null;
 	onDelete: (profile: Profile) => void;
+	onEdit: (profile: Profile) => void;
+}
+
+interface ProfileRowProps {
+	profile: Profile;
+	usedBy: Record<string, string[]>;
+	selectedId: string | null;
+	onDelete: (profile: Profile) => void;
+	onEdit: (profile: Profile) => void;
+}
+
+function ProfileRowActions({
+	profile,
+	onEdit,
+	onDelete,
+}: {
+	profile: Profile;
+	onEdit: (profile: Profile) => void;
+	onDelete: (profile: Profile) => void;
+}) {
+	return (
+		<div className="profile-col-actions">
+			<button
+				type="button"
+				className="profile-action profile-action-edit"
+				aria-label={`Edit ${profile.id}`}
+				onClick={() => onEdit(profile)}
+			>
+				Edit
+			</button>
+			<button
+				type="button"
+				className="profile-action profile-action-delete"
+				aria-label={`Delete ${profile.id}`}
+				onClick={() => onDelete(profile)}
+			>
+				Delete
+			</button>
+		</div>
+	);
 }
 
 function ProfileRow({
@@ -12,12 +52,8 @@ function ProfileRow({
 	usedBy,
 	selectedId,
 	onDelete,
-}: {
-	profile: Profile;
-	usedBy: Record<string, string[]>;
-	selectedId: string | null;
-	onDelete: (profile: Profile) => void;
-}) {
+	onEdit,
+}: ProfileRowProps) {
 	const graphs = usedBy[profile.id];
 	const usedLabel = graphs?.length ? graphs.join(", ") : "—";
 	const glyph = profile.meta.glyph ?? profile.id.charAt(0);
@@ -50,23 +86,11 @@ function ProfileRow({
 				{profile.hasSystemPrompt ? "SYSTEM.md" : "default"}
 			</div>
 			<div className="profile-col-used profile-used">{usedLabel}</div>
-			<div className="profile-col-actions">
-				<button
-					type="button"
-					disabled
-					className="profile-action profile-action-edit"
-				>
-					Edit
-				</button>
-				<button
-					type="button"
-					className="profile-action profile-action-delete"
-					aria-label={`Delete ${profile.id}`}
-					onClick={() => onDelete(profile)}
-				>
-					Delete
-				</button>
-			</div>
+			<ProfileRowActions
+				profile={profile}
+				onEdit={onEdit}
+				onDelete={onDelete}
+			/>
 		</div>
 	);
 }
@@ -76,6 +100,7 @@ export function ProfileTable({
 	usedBy,
 	selectedId,
 	onDelete,
+	onEdit,
 }: ProfileTableProps) {
 	return (
 		<div className="profile-table">
@@ -97,6 +122,7 @@ export function ProfileTable({
 					usedBy={usedBy}
 					selectedId={selectedId}
 					onDelete={onDelete}
+					onEdit={onEdit}
 				/>
 			))}
 		</div>

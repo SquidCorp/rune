@@ -36,6 +36,7 @@ export interface Profile {
 	displayName: string;
 	meta: ProfileMeta;
 	hasSystemPrompt: boolean;
+	systemPrompt?: string;
 	paths: {
 		dir: string;
 		skills?: string;

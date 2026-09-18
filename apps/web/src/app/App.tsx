@@ -1,14 +1,21 @@
 import {
+	type CreateProfileInput,
 	type Graph,
 	type HealthResponse,
 	type Profile,
 	RuneClient,
 	type RuneScope,
+	type UpdateProfileInput,
 } from "@rune/sdk";
 import { useEffect, useState } from "react";
 
-import type { ProfileViewState } from "@/modules/profile";
-import { ProfileDeleteDialog, ProfileSection } from "@/modules/profile";
+import {
+	ProfileCreateDialog,
+	ProfileDeleteDialog,
+	ProfileEditDialog,
+	ProfileSection,
+	type ProfileViewState,
+} from "@/modules/profile";
 import { ShellFooter, ShellHeader } from "@/modules/shell";
 
 const client = new RuneClient({
@@ -164,9 +171,9 @@ function useDeleteDialog(graphs: Graph[], scope: RuneScope, set: PanelSetters) {
 
 	return {
 		pending,
-		deleteError,
-		deleteBusy,
 		forceRequired,
+		error: deleteError,
+		busy: deleteBusy,
 		openDelete: (profile: Profile) => {
 			setPending(profile);
 			setDeleteError(null);
@@ -195,6 +202,185 @@ function useDeleteDialog(graphs: Graph[], scope: RuneScope, set: PanelSetters) {
 	};
 }
 
+async function submitProfileCreate(args: {
+	input: CreateProfileInput;
+	busy: boolean;
+	scope: RuneScope;
+	createScope: RuneScope;
+	set: PanelSetters;
+	setScope: (scope: RuneScope) => void;
+	setOpen: (value: boolean) => void;
+	setError: (value: string | null) => void;
+	setBusy: (value: boolean) => void;
+}): Promise<void> {
+	if (args.busy || !args.input.id.trim()) return;
+	args.setBusy(true);
+	args.setError(null);
+	try {
+		await client.createProfile(args.input, { scope: args.createScope });
+		args.setOpen(false);
+		args.setError(null);
+		args.setBusy(false);
+		if (args.createScope === args.scope) {
+			applySnapshot(await loadPanel(args.createScope), args.set);
+			return;
+		}
+		args.setScope(args.createScope);
+	} catch (err) {
+		args.setBusy(false);
+		args.setError(
+			err instanceof Error ? err.message : "Failed to create profile",
+		);
+	}
+}
+
+function useCreateDialog(
+	scope: RuneScope,
+	set: PanelSetters,
+	setScope: (scope: RuneScope) => void,
+) {
+	const [open, setOpen] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const [busy, setBusy] = useState(false);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset on scope change
+	useEffect(() => {
+		setOpen(false);
+		setError(null);
+	}, [scope]);
+
+	return {
+		open,
+		error,
+		busy,
+		openCreate: () => {
+			setOpen(true);
+			setError(null);
+			setBusy(false);
+		},
+		cancelCreate: () => {
+			if (busy) return;
+			setOpen(false);
+			setError(null);
+		},
+		submitCreate: (input: CreateProfileInput, createScope: RuneScope) =>
+			submitProfileCreate({
+				input,
+				busy,
+				scope,
+				createScope,
+				set,
+				setScope,
+				setOpen,
+				setError,
+				setBusy,
+			}),
+	};
+}
+
+async function submitProfileUpdate(args: {
+	id: string;
+	input: UpdateProfileInput;
+	busy: boolean;
+	scope: RuneScope;
+	set: PanelSetters;
+	setPending: (value: Profile | null) => void;
+	setError: (value: string | null) => void;
+	setBusy: (value: boolean) => void;
+}): Promise<void> {
+	if (args.busy || !args.id.trim()) return;
+	args.setBusy(true);
+	args.setError(null);
+	try {
+		await client.updateProfile(args.id, args.input, { scope: args.scope });
+		args.setPending(null);
+		args.setError(null);
+		args.setBusy(false);
+		applySnapshot(await loadPanel(args.scope), args.set);
+	} catch (err) {
+		args.setBusy(false);
+		args.setError(
+			err instanceof Error ? err.message : "Failed to update profile",
+		);
+	}
+}
+
+function useEditDialog(scope: RuneScope, set: PanelSetters) {
+	const [pending, setPending] = useState<Profile | null>(null);
+	const [error, setError] = useState<string | null>(null);
+	const [busy, setBusy] = useState(false);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset on scope change
+	useEffect(() => {
+		setPending(null);
+		setError(null);
+	}, [scope]);
+
+	return {
+		pending,
+		error,
+		busy,
+		openEdit: (profile: Profile) => {
+			setPending(profile);
+			setError(null);
+			setBusy(false);
+		},
+		cancelEdit: () => {
+			if (busy) return;
+			setPending(null);
+			setError(null);
+		},
+		submitEdit: (id: string, input: UpdateProfileInput) =>
+			submitProfileUpdate({
+				id,
+				input,
+				busy,
+				scope,
+				set,
+				setPending,
+				setError,
+				setBusy,
+			}),
+	};
+}
+
+function exclusiveDialogOpeners(args: {
+	create: AppChromeProps["createDialog"];
+	edit: AppChromeProps["editDialog"];
+	dialog: AppChromeProps["deleteDialog"];
+}): {
+	createDialog: AppChromeProps["createDialog"];
+	editDialog: AppChromeProps["editDialog"];
+	deleteDialog: AppChromeProps["deleteDialog"];
+} {
+	const { create, edit, dialog } = args;
+	return {
+		createDialog: {
+			...create,
+			openCreate: () => {
+				if (edit.busy || dialog.busy) return;
+				edit.cancelEdit();
+				dialog.cancelDelete();
+				create.openCreate();
+			},
+		},
+		editDialog: {
+			...edit,
+			openEdit: (profile: Profile) => {
+				if (dialog.busy) return;
+				dialog.cancelDelete();
+				edit.openEdit(profile);
+			},
+		},
+		deleteDialog: {
+			...dialog,
+			openDelete: (profile: Profile) => {
+				if (edit.busy) return;
+				edit.cancelEdit();
+				dialog.openDelete(profile);
+			},
+		},
+	};
+}
+
 interface AppChromeProps {
 	scope: RuneScope;
 	healthOk: boolean;
@@ -203,21 +389,91 @@ interface AppChromeProps {
 	pipelineCount: number | null;
 	viewState: ProfileViewState;
 	graphs: Graph[];
-	pending: Profile | null;
-	forceRequired: boolean;
-	deleteError: string | null;
-	deleteBusy: boolean;
-	openDelete: (profile: Profile) => void;
-	cancelDelete: () => void;
-	confirmDelete: () => void;
 	onToggleScope: () => void;
+	deleteDialog: {
+		pending: Profile | null;
+		forceRequired: boolean;
+		error: string | null;
+		busy: boolean;
+		openDelete: (profile: Profile) => void;
+		cancelDelete: () => void;
+		confirmDelete: () => void;
+	};
+	createDialog: {
+		open: boolean;
+		error: string | null;
+		busy: boolean;
+		openCreate: () => void;
+		cancelCreate: () => void;
+		submitCreate: (input: CreateProfileInput, scope: RuneScope) => void;
+	};
+	editDialog: {
+		pending: Profile | null;
+		error: string | null;
+		busy: boolean;
+		openEdit: (profile: Profile) => void;
+		cancelEdit: () => void;
+		submitEdit: (id: string, input: UpdateProfileInput) => void;
+	};
+}
+
+interface AppDialogsProps {
+	scope: RuneScope;
+	graphs: Graph[];
+	deleteDialog: AppChromeProps["deleteDialog"];
+	createDialog: AppChromeProps["createDialog"];
+	editDialog: AppChromeProps["editDialog"];
+}
+
+function AppDialogs({
+	scope,
+	graphs,
+	deleteDialog,
+	createDialog,
+	editDialog,
+}: AppDialogsProps) {
+	if (createDialog.open) {
+		return (
+			<ProfileCreateDialog
+				scope={scope}
+				error={createDialog.error}
+				busy={createDialog.busy}
+				onCancel={createDialog.cancelCreate}
+				onSubmit={(input, createScope) =>
+					void createDialog.submitCreate(input, createScope)
+				}
+			/>
+		);
+	}
+	if (editDialog.pending) {
+		return (
+			<ProfileEditDialog
+				profile={editDialog.pending}
+				scope={scope}
+				error={editDialog.error}
+				busy={editDialog.busy}
+				onCancel={editDialog.cancelEdit}
+				onSubmit={(id, input) => void editDialog.submitEdit(id, input)}
+			/>
+		);
+	}
+	if (!deleteDialog.pending) return null;
+	const pending = deleteDialog.pending;
+	const graphIds = usedByMap(graphs, scope)[pending.id] ?? [];
+	return (
+		<ProfileDeleteDialog
+			profileId={pending.id}
+			graphIds={graphIds}
+			forceRequired={deleteDialog.forceRequired}
+			error={deleteDialog.error}
+			busy={deleteDialog.busy}
+			onCancel={deleteDialog.cancelDelete}
+			onConfirm={() => void deleteDialog.confirmDelete()}
+		/>
+	);
 }
 
 function AppChrome(props: AppChromeProps) {
-	const graphIds = props.pending
-		? (usedByMap(props.graphs, props.scope)[props.pending.id] ?? [])
-		: [];
-
 	return (
 		<div className="shell">
 			<ShellHeader
@@ -225,12 +481,17 @@ function AppChrome(props: AppChromeProps) {
 				healthOk={props.healthOk}
 				healthLabel={props.healthLabel}
 				profileCount={props.profileCount}
+				onCreate={props.createDialog.openCreate}
 			/>
 			<ProfileSection
 				state={props.viewState}
 				scope={props.scope}
-				selectedId={props.pending?.id ?? null}
-				onDelete={props.openDelete}
+				selectedId={
+					props.editDialog.pending?.id ?? props.deleteDialog.pending?.id ?? null
+				}
+				onDelete={props.deleteDialog.openDelete}
+				onCreate={props.createDialog.openCreate}
+				onEdit={props.editDialog.openEdit}
 			/>
 			<ShellFooter
 				profileCount={props.profileCount}
@@ -239,17 +500,13 @@ function AppChrome(props: AppChromeProps) {
 				onToggleScope={props.onToggleScope}
 				enginesOk={props.healthOk}
 			/>
-			{props.pending ? (
-				<ProfileDeleteDialog
-					profileId={props.pending.id}
-					graphIds={graphIds}
-					forceRequired={props.forceRequired}
-					error={props.deleteError}
-					busy={props.deleteBusy}
-					onCancel={props.cancelDelete}
-					onConfirm={props.confirmDelete}
-				/>
-			) : null}
+			<AppDialogs
+				scope={props.scope}
+				graphs={props.graphs}
+				deleteDialog={props.deleteDialog}
+				createDialog={props.createDialog}
+				editDialog={props.editDialog}
+			/>
 		</div>
 	);
 }
@@ -302,7 +559,10 @@ function usePanel() {
 export function App() {
 	const panel = usePanel();
 	const dialog = useDeleteDialog(panel.graphs, panel.scope, panel.set);
+	const create = useCreateDialog(panel.scope, panel.set, panel.setScope);
+	const edit = useEditDialog(panel.scope, panel.set);
 	const healthOk = panel.health !== null;
+	const openers = exclusiveDialogOpeners({ create, edit, dialog });
 	return (
 		<AppChrome
 			scope={panel.scope}
@@ -326,13 +586,9 @@ export function App() {
 				scope: panel.scope,
 			})}
 			graphs={panel.graphs}
-			pending={dialog.pending}
-			forceRequired={dialog.forceRequired}
-			deleteError={dialog.deleteError}
-			deleteBusy={dialog.deleteBusy}
-			openDelete={dialog.openDelete}
-			cancelDelete={dialog.cancelDelete}
-			confirmDelete={() => void dialog.confirmDelete()}
+			deleteDialog={openers.deleteDialog}
+			createDialog={openers.createDialog}
+			editDialog={openers.editDialog}
 			onToggleScope={() =>
 				panel.setScope((current) =>
 					current === "project" ? "user" : "project",

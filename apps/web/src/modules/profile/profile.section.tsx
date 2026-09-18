@@ -14,6 +14,8 @@ export interface ProfileSectionProps {
 	scope: RuneScope;
 	selectedId: string | null;
 	onDelete: (profile: Profile) => void;
+	onCreate: () => void;
+	onEdit: (profile: Profile) => void;
 }
 
 function panelBody({
@@ -21,6 +23,8 @@ function panelBody({
 	scope,
 	selectedId,
 	onDelete,
+	onCreate,
+	onEdit,
 }: ProfileSectionProps) {
 	switch (state.kind) {
 		case "loading":
@@ -36,7 +40,7 @@ function panelBody({
 				</div>
 			);
 		case "empty":
-			return <ProfileEmpty scope={scope} />;
+			return <ProfileEmpty scope={scope} onCreate={onCreate} />;
 		case "list":
 			return (
 				<ProfileTable
@@ -44,6 +48,7 @@ function panelBody({
 					usedBy={state.usedBy}
 					selectedId={selectedId}
 					onDelete={onDelete}
+					onEdit={onEdit}
 				/>
 			);
 	}
