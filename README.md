@@ -12,11 +12,11 @@ Under the hood, Rune is built on the [pi](https://github.com/earendil-works/pi-c
 
 | Path | Name | Role |
 |---|---|---|
-| `packages/engine` | `@rune/engine` | Domain: sessions, profile extension, graph run |
+| `packages/engine` | `@rune/engine` | Domain: sessions, profile extension, graph run, invoke |
 | `packages/api` | `@rune/api` | HTTP gateway (embeds engine paths/store) |
 | `packages/sdk` | `@rune/sdk` | Shared types + HTTP client |
 | `packages/tokens` | `@rune/tokens` | Design tokens (colors, type, space, radius) |
-| `packages/cli` | `@rune/cli` | `rune` binary (`serve`, profile/graph commands) |
+| `packages/cli` | `@rune/cli` | `rune` binary (`serve`, `invoke`, profile/graph commands) |
 | `apps/web` | `@rune/web` | React SPA — config UI (+ canvas later) |
 | `apps/docs` | `@rune/docs` | Astro documentation site |
 
@@ -73,6 +73,9 @@ bun run dev:docs
 ```bash
 bun run rune serve
 bun run rune profile create researcher --name Researcher
+bun run rune invoke
+bun run rune invoke --profile researcher
+
 bun run rune profile list
 bun run rune profile show researcher
 bun run rune profile set researcher --model anthropic/claude-sonnet-4-5
@@ -95,7 +98,7 @@ await session.prompt("Hello from Rune");
 ## Architecture
 
 ```text
-engine  ←  api  ←  cli (serve embeds api; other cmds use sdk)
+engine  ←  api  ←  cli (serve embeds api; invoke embeds engine; other cmds use sdk)
              ↑
             sdk  ←  web
 docs (standalone)
@@ -103,4 +106,4 @@ docs (standalone)
 
 In-package code lives under `src/modules/<domain>` with a single facade per domain.
 
-Web and CLI never import `@rune/engine`. Only the API (and engine internals) touch `.rune` on disk.
+Web never imports `@rune/engine`. CLI `serve` embeds the API; `invoke` embeds the engine (Pi TUI). Other CLI commands use the SDK. Only the API, engine, and `invoke` touch `.rune` on disk.

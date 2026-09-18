@@ -241,15 +241,32 @@ function updateStatus(
 	ctx.ui.setStatus(STATUS_ID, ctx.ui.theme.fg("accent", label));
 }
 
-function findModel(ctx: ExtensionContext, spec: string) {
-	const slash = spec.indexOf("/");
-	if (slash <= 0 || slash === spec.length - 1)
-		return { error: `model must be provider/id, got "${spec}"` as const };
-	const provider = spec.slice(0, slash);
-	const modelId = spec.slice(slash + 1);
-	const model = ctx.modelRegistry.find(provider, modelId);
-	if (!model) return { error: `model ${spec} not found` as const };
-	return { model };
+export function resolveProfileModel<T extends { provider: string; id: string }>(
+	spec: string,
+	models: readonly T[],
+): { model: T } | { error: string } {
+	const trimmed = spec.trim();
+	if (
+		!trimmed.includes("/") ||
+		trimmed.startsWith("/") ||
+		trimmed.endsWith("/")
+	) {
+		return { error: `model must be provider/id, got "${spec}"` };
+	}
+	const lower = trimmed.toLowerCase();
+	const byRef = models.filter(
+		(model) => `${model.provider}/${model.id}`.toLowerCase() === lower,
+	);
+	if (byRef.length === 1) {
+		const model = byRef[0];
+		if (model) return { model };
+	}
+	const byId = models.filter((model) => model.id.toLowerCase() === lower);
+	if (byId.length === 1) {
+		const model = byId[0];
+		if (model) return { model };
+	}
+	return { error: `model ${spec} not found` };
 }
 
 async function loadProfileExtensions(pi: ExtensionAPI, extensionDir?: string) {
@@ -295,7 +312,11 @@ async function applyMetadata(
 ): Promise<void> {
 	const { model: modelSpec, thinkingLevel } = profile.meta;
 	if (modelSpec) {
-		const found = findModel(ctx, modelSpec);
+		const found = resolveProfileModel(
+			modelSpec,
+			ctx.modelRegistry.getAvailable(),
+		);
+
 		if ("error" in found) {
 			ctx.ui.notify(`Profile "${profile.id}": ${found.error}`, "warning");
 		} else {

@@ -2,6 +2,7 @@ import { RuneClient } from "@rune/sdk";
 
 import { runGraphCommand } from "./modules/graph/index.ts";
 import { runHealthCommand } from "./modules/health/index.ts";
+import { runInvokeCommand } from "./modules/invoke/index.ts";
 import { runProfileCommand } from "./modules/profile/index.ts";
 import { runServeCommand } from "./modules/serve/index.ts";
 
@@ -10,6 +11,7 @@ function printHelp(): void {
 
 Usage:
   rune serve [--port <n>] [--host <addr>]
+  rune invoke [--profile <id>]
   rune profile list [--scope user|project]
   rune profile show <id> [--scope user|project]
   rune profile create <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>] [--scope user|project]
@@ -46,6 +48,10 @@ export async function runCli(argv: string[]): Promise<void> {
 
 	if (cmd === "serve") {
 		await runServeCommand(argv);
+		return;
+	}
+	if (cmd === "invoke") {
+		await runInvokeCommand(argv.slice(1));
 		return;
 	}
 

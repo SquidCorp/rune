@@ -17,8 +17,10 @@
 	},
 	"dependencies": {
 		"@rune/api": "workspace:*",
+		"@rune/engine": "workspace:*",
 		"@rune/sdk": "workspace:*"
 	},
+
 	"devDependencies": {
 		"@types/bun": "latest",
 		"typescript": "^5"

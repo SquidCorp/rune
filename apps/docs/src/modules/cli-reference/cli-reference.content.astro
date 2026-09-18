@@ -13,6 +13,7 @@ const toc = [
 	{ id: "overview", label: "Overview" },
 	{ id: "global", label: "Global options" },
 	{ id: "serve", label: "serve" },
+	{ id: "invoke", label: "invoke" },
 	{ id: "profile", label: "profile" },
 	{ id: "graph", label: "graph" },
 	{ id: "health", label: "health" },
@@ -89,6 +90,7 @@ const graphCommands = [
 ] as const;
 
 const overviewSample = `rune serve [--port <n>] [--host <addr>]
+rune invoke [--profile <id>]
 rune profile list | show | create | set | delete
 rune graph list | show | check | run
 rune health
@@ -98,6 +100,8 @@ const globalSample = `rune --url http://127.0.0.1:8787 profile list
 RUNE_URL=http://127.0.0.1:9000 bun run rune health`;
 
 const serveUsage = "rune serve [--port <n>] [--host <addr>]";
+
+const invokeUsage = "rune invoke [--profile <id>]";
 
 const serveSample = `❯ bun run rune serve
 Rune API listening on http://127.0.0.1:8787
@@ -129,9 +133,11 @@ path: plan -> write
 
 ❯ bun run rune graph run draft --prompt "Write about runes"
 …sink assistant text…`;
-
 const healthSample = `rune health
 rune --url http://127.0.0.1:8787 health`;
+
+const invokeSample = `❯ bun run rune invoke
+❯ bun run rune invoke --profile researcher`;
 
 const helpSample = `rune help
 rune --help
@@ -151,9 +157,10 @@ const dataRoot = "<cwd>/.rune";
 		<p class="section-label">CLI reference</p>
 		<h1 class="cli-ref__title">Command reference</h1>
 		<p class="cli-ref__lede">
-			The <code>rune</code> binary talks to the local HTTP control plane. Run
-			<code>bun run rune …</code> from the monorepo root, or invoke the package bin directly. Most
-			commands need <code>rune serve</code> already listening unless noted.
+			Run <code>bun run rune …</code> from the monorepo root, or invoke the package bin
+			directly. Client commands (<code>profile</code>, <code>graph</code>,
+			<code>health</code>) need <code>rune serve</code>. <code>serve</code> and
+			<code>invoke</code> are local processes and do not use the HTTP client.
 		</p>
 	</header>
 
@@ -224,6 +231,45 @@ const dataRoot = "<cwd>/.rune";
 					On start the process prints the listen URL and data root <code>{dataRoot}</code>.
 				</p>
 				<pre class="cli-ref__pre" tabindex="0"><code>{serveSample}</code></pre>
+			</section>
+
+			<section id="invoke" class="cli-ref__section">
+				<h2><code>rune invoke</code></h2>
+				<p>
+					Start Pi’s interactive TUI. No <code>--profile</code> uses Default
+					(<code>~/.rune</code>). With <code>--profile</code>, overlays a project
+					profile from <code>{dataRoot}/profiles/&lt;id&gt;</code>. Sets Pi’s agent
+					dir to <code>~/.rune</code> (or <code>$RUNE_HOME</code>). Does not require
+					<code>rune serve</code>. Extra arguments after the flags are forwarded to Pi.
+				</p>
+
+				<pre class="cli-ref__pre" tabindex="0"><code>{invokeUsage}</code></pre>
+				<table class="cli-ref__table">
+					<thead>
+						<tr>
+							<th scope="col">Flag</th>
+							<th scope="col">Description</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><code>--profile &lt;id&gt;</code></td>
+							<td>
+								Optional. Project profile under <code>.rune/profiles/</code>.
+								<code>default</code> is the same as omitting the flag.
+							</td>
+
+						</tr>
+					</tbody>
+				</table>
+				<p>
+					Inside the session, <code>/profile</code> shows the current profile and
+					<code>/profile &lt;id&gt;</code> starts a new session on another project
+					profile. Credentials are <code>~/.rune/auth.json</code> (or
+					<code>$RUNE_HOME/auth.json</code>), not project <code>.rune/auth.json</code>.
+				</p>
+
+				<pre class="cli-ref__pre" tabindex="0"><code>{invokeSample}</code></pre>
 			</section>
 
 			<section id="profile" class="cli-ref__section">

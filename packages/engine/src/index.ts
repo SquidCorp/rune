@@ -10,6 +10,11 @@ export {
 	truncateDiagText,
 } from "./modules/graph/index.ts";
 export {
+	type InvokeInteractiveOptions,
+	invokeInteractive,
+} from "./modules/invoke/index.ts";
+
+export {
 	graphPath,
 	graphsRoot,
 	profileDir,
