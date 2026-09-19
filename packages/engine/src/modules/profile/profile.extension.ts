@@ -46,8 +46,9 @@ type ProfileExtensionContext = ExtensionContext & {
 const ACTIVE_STORE = Symbol.for("pi.profiles.activeId");
 const STATUS_ID = "profile";
 const RESERVED_DEFAULT = "default";
+export const DEFAULT_GLYPH = "ᚱ";
 
-interface ActiveProfile {
+export interface ActiveProfile {
 	id: string;
 	dir: string;
 	displayName: string;
@@ -219,13 +220,20 @@ function requestedId(pi: ExtensionAPI): string {
 	return RESERVED_DEFAULT;
 }
 
-function formatCurrent(profile: ActiveProfile | undefined): string {
-	if (!profile) return "Default";
+export function formatCurrent(
+	profile: ActiveProfile | undefined,
+	glyphText?: string,
+): string {
+	if (!profile) {
+		const mark = glyphText ?? DEFAULT_GLYPH;
+		return `${mark} Default`;
+	}
 	const label =
 		profile.displayName === profile.id
 			? profile.id
 			: `${profile.displayName} (${profile.id})`;
-	return profile.meta.glyph ? `${profile.meta.glyph} ${label}` : label;
+	const mark = glyphText ?? profile.meta.glyph;
+	return mark ? `${mark} ${label}` : label;
 }
 
 function updateStatus(
@@ -233,12 +241,10 @@ function updateStatus(
 	profile: ActiveProfile | undefined,
 ): void {
 	if (!ctx.hasUI) return;
-	if (!profile) {
-		ctx.ui.setStatus(STATUS_ID, undefined);
-		return;
-	}
-	const label = `profile: ${profile.displayName}`;
-	ctx.ui.setStatus(STATUS_ID, ctx.ui.theme.fg("accent", label));
+	const theme = ctx.ui.theme;
+	const glyph = profile ? profile.meta.glyph : DEFAULT_GLYPH;
+	const current = formatCurrent(profile, glyph ? theme.bold(glyph) : undefined);
+	ctx.ui.setStatus(STATUS_ID, theme.fg("accent", `Profile: ${current}`));
 }
 
 export function resolveProfileModel<T extends { provider: string; id: string }>(
@@ -436,7 +442,7 @@ function registerSessionHooks(
 	pi: ExtensionAPI,
 	controller: ProfileController,
 ): void {
-	pi.on("session_start", async (event, ctx) => {
+	pi.on("session_start", async (_event, ctx) => {
 		const { profile, error } = controller.resolve(ctx);
 		updateStatus(ctx, profile);
 
@@ -447,10 +453,6 @@ function registerSessionHooks(
 		if (!profile) return;
 
 		await applyMetadata(pi, ctx, profile);
-
-		if (event.reason === "startup" || event.reason === "new") {
-			ctx.ui.notify(`Profile: ${formatCurrent(profile)}`, "info");
-		}
 	});
 
 	pi.on("resources_discover", () => {
