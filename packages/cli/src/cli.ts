@@ -14,8 +14,8 @@ Usage:
   rune invoke [--profile <id>]
   rune profile list [--scope user|project]
   rune profile show <id> [--scope user|project]
-  rune profile create <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>] [--scope user|project]
-  rune profile set <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>] [--scope user|project]
+  rune profile create <id> [--name <name>] [--description <text>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>] [--scope user|project]
+  rune profile set <id> [--name <name>] [--description <text>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>] [--scope user|project]
   rune profile delete <id> [--force] [--scope user|project]
   rune graph list
   rune graph show <graph-id>

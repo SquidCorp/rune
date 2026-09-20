@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createHandler } from "../../app.ts";
-import { createProfile, listProfiles } from "./profile.store.ts";
+import { createProfile, listProfiles, updateProfile } from "./profile.store.ts";
 
 const dirs: string[] = [];
 const originalRuneHome = process.env.RUNE_HOME;
@@ -153,5 +153,42 @@ describe("profile HTTP scope", () => {
 		expect(res.status).toBe(400);
 		const body = (await res.json()) as { error: string };
 		expect(body.error).toMatch(/Invalid scope/);
+	});
+});
+
+describe("profile description", () => {
+	test("createProfile writes description to profile.json", () => {
+		const userDir = tempDir("rune-profile-desc-create-");
+		const cwd = tempDir("rune-profile-desc-create-cwd-");
+		process.env.RUNE_HOME = userDir;
+
+		createProfile({ id: "r", description: "Does research" }, cwd, "user");
+
+		const meta = JSON.parse(
+			readFileSync(join(userDir, "profiles", "r", "profile.json"), "utf-8"),
+		) as { description?: string };
+		expect(meta.description).toBe("Does research");
+	});
+
+	test("updateProfile persists description and keeps it on name-only update", () => {
+		const userDir = tempDir("rune-profile-desc-update-");
+		const cwd = tempDir("rune-profile-desc-update-cwd-");
+		process.env.RUNE_HOME = userDir;
+
+		createProfile({ id: "r", description: "Does research" }, cwd, "user");
+		updateProfile("r", { description: "x" }, { cwd, scope: "user" });
+
+		const afterDesc = JSON.parse(
+			readFileSync(join(userDir, "profiles", "r", "profile.json"), "utf-8"),
+		) as { description?: string; name?: string };
+		expect(afterDesc.description).toBe("x");
+
+		updateProfile("r", { name: "N" }, { cwd, scope: "user" });
+
+		const afterName = JSON.parse(
+			readFileSync(join(userDir, "profiles", "r", "profile.json"), "utf-8"),
+		) as { description?: string; name?: string };
+		expect(afterName.description).toBe("x");
+		expect(afterName.name).toBe("N");
 	});
 });

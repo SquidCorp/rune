@@ -187,6 +187,7 @@ export function createProfile(
 	const dir = profileDirForScope(input.id, scope, cwd);
 	const meta: ProfileMeta = { glyph: assignGlyph(cwd, scope) };
 	if (input.name?.trim()) meta.name = input.name.trim();
+	if (input.description?.trim()) meta.description = input.description.trim();
 	if (input.model?.trim()) meta.model = input.model.trim();
 	if (input.thinkingLevel) {
 		meta.thinkingLevel = parseThinkingLevel(input.thinkingLevel);
@@ -213,6 +214,8 @@ export function updateProfile(
 	const meta: ProfileMeta = { ...profile.meta };
 
 	if (input.name !== undefined) meta.name = requireNonEmpty(input.name, "name");
+	if (input.description !== undefined)
+		meta.description = requireNonEmpty(input.description, "description");
 	if (input.model !== undefined)
 		meta.model = requireNonEmpty(input.model, "model");
 	if (input.thinkingLevel !== undefined) {

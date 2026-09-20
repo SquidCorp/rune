@@ -3,7 +3,7 @@
  *
  * Layout under the runtime data root:
  *   .rune/profiles/<id>/
- *     profile.json     optional { name, model, thinkingLevel, glyph }
+ *     profile.json     optional { name, description, model, thinkingLevel, glyph }
  *     SYSTEM.md        optional; replaces the system prompt when present
  *     skills/          unioned with default skills
  *     prompts/         unioned with default prompts
@@ -159,6 +159,7 @@ function loadMeta(dir: string): { meta: ProfileMeta; error?: string } {
 	const thinking = thinkingLevelFromRaw(raw, path);
 	const meta: ProfileMeta = {
 		name: trimmedField(raw, "name"),
+		description: trimmedField(raw, "description"),
 		model: trimmedField(raw, "model"),
 		glyph: trimmedField(raw, "glyph"),
 		thinkingLevel: thinking.value,

@@ -9,6 +9,7 @@ import {
 	userRuneDir,
 } from "../paths/index.ts";
 import profileExtensionFactory from "../profile/index.ts";
+import profileSelectorExtensionFactory from "../profile-selector/index.ts";
 import runeBannerExtensionFactory from "./invoke.extension.ts";
 
 /** Pi reads this instead of ~/.pi/agent. Not re-exported from the package JS. */
@@ -22,6 +23,11 @@ const profileExtension: InlineExtension = {
 const bannerExtension: InlineExtension = {
 	name: "rune-banner",
 	factory: runeBannerExtensionFactory,
+};
+
+const selectorExtension: InlineExtension = {
+	name: "rune-profile-selector",
+	factory: profileSelectorExtensionFactory,
 };
 
 export interface InvokeInteractiveOptions {
@@ -91,6 +97,6 @@ export async function invokeInteractive(
 	assertInvokeAuthLocation();
 	process.env[PI_AGENT_DIR_ENV] = userRuneDir();
 	await main(piArgsForInvoke(options), {
-		extensionFactories: [profileExtension, bannerExtension],
+		extensionFactories: [profileExtension, bannerExtension, selectorExtension],
 	});
 }

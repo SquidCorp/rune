@@ -58,6 +58,7 @@ function readPromptFlags(args: string[]): string | undefined {
 
 interface ProfileMutation {
 	name?: string;
+	description?: string;
 	model?: string;
 	thinkingLevel?: ThinkingLevel;
 	systemPrompt?: string;
@@ -66,6 +67,7 @@ interface ProfileMutation {
 function profileMutationFromArgs(args: string[]): ProfileMutation {
 	return {
 		name: flagValue(args, "--name"),
+		description: flagValue(args, "--description"),
 		model: flagValue(args, "--model"),
 		thinkingLevel: parseThinkingLevelFlag(args),
 		systemPrompt: readPromptFlags(args),
@@ -109,6 +111,9 @@ async function cmdProfileShow(
 	const profile = await client.getProfile(id, { scope });
 	console.log(`${profile.meta.glyph ?? "-"}\t${profile.id}`);
 	console.log(`name\t${profile.displayName}`);
+	if (profile.meta.description) {
+		console.log(`description\t${profile.meta.description}`);
+	}
 	if (profile.meta.model) console.log(`model\t${profile.meta.model}`);
 	if (profile.meta.thinkingLevel) {
 		console.log(`thinkingLevel\t${profile.meta.thinkingLevel}`);
@@ -123,7 +128,7 @@ async function cmdProfileCreate(
 ): Promise<void> {
 	const id = requireProfileId(
 		rest,
-		"Usage: rune profile create <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>] [--scope user|project]",
+		"Usage: rune profile create <id> [--name <name>] [--description <text>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>] [--scope user|project]",
 	);
 	const scope = parseScopeFlag(rest);
 	const profile = await client.createProfile(
@@ -142,12 +147,13 @@ async function cmdProfileSet(
 	rest: string[],
 ): Promise<void> {
 	const usage =
-		"Usage: rune profile set <id> [--name <name>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>] [--scope user|project]";
+		"Usage: rune profile set <id> [--name <name>] [--description <text>] [--model <provider/id>] [--thinking-level <level>] [--prompt <string>] [--prompt-file <path>] [--scope user|project]";
 	const id = requireProfileId(rest, usage);
 	const scope = parseScopeFlag(rest);
 	const input = profileMutationFromArgs(rest);
 	if (
 		input.name === undefined &&
+		input.description === undefined &&
 		input.model === undefined &&
 		input.thinkingLevel === undefined &&
 		input.systemPrompt === undefined

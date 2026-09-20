@@ -26,6 +26,7 @@ export function parseRuneScope(value: string | undefined | null): RuneScope {
 
 export interface ProfileMeta {
 	name?: string;
+	description?: string;
 	model?: string;
 	thinkingLevel?: ThinkingLevel;
 	glyph?: string;
@@ -49,6 +50,7 @@ export interface Profile {
 export interface CreateProfileInput {
 	id: string;
 	name?: string;
+	description?: string;
 	model?: string;
 	thinkingLevel?: ThinkingLevel;
 	systemPrompt?: string;
@@ -56,6 +58,7 @@ export interface CreateProfileInput {
 
 export interface UpdateProfileInput {
 	name?: string;
+	description?: string;
 	model?: string;
 	thinkingLevel?: ThinkingLevel;
 	systemPrompt?: string;
